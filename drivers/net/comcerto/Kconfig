@@ -10,7 +10,7 @@ config NET_COMCERTO_2000
 
 config AR8328_SWITCH
 	depends on NET_COMCERTO_2000
-	depends on MACH_COMCERTO_C2K_EVM 
+	depends on MACH_COMCERTO_C2K_EVM || MACH_OPTIMUS
 	bool "AR8328 Switch Driver"
 	default y
 

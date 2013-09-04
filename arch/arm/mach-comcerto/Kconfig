@@ -28,6 +28,10 @@ menu "Board Selection"
 choice
         prompt "Select the Board"
 
+config  MACH_OPTIMUS
+        bool "Google Fiber Optimus"
+        help
+
 config  MACH_COMCERTO_C2K_EVM
         bool "EVM"
         help

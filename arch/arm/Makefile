@@ -57,6 +57,7 @@ machine-$(CONFIG_ARCH_VERSATILE)	:= versatile
 
 # Board directory name.  This list is sorted alphanumerically
 # by CONFIG_* macro name.
+board-$(CONFIG_MACH_OPTIMUS)                    := optimus
 board-$(CONFIG_MACH_COMCERTO_C2K_EVM)           := comcerto-evm
 board-$(CONFIG_MACH_COMCERTO_C2K_ASIC)          := comcerto-asic
 board-$(CONFIG_MACH_COMCERTO_C2K_RTSM)          := comcerto-rtsm
