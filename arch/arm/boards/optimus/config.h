@@ -3,7 +3,7 @@
 
 #define CONFIG_LBA48
 
-#define DDR_SIZE        SZ_512M
+#define DDR_SIZE        SZ_1G
 
 #define CFG_I2C_EEPROM0_ADDR     0x50
 #define I2C_EEPROM_PAGE_SZ	128
@@ -12,11 +12,11 @@
 
 #define NOR_FLASH_SIZE          64 * 1024 * 1024
 
-#define EMAC0_PHY_ADDR	4
-#define EMAC1_PHY_ADDR	0
-#define EMAC0_FLAGS 	0
-#define EMAC1_FLAGS 	GEMAC_NO_PHY
-#define EMAC2_FLAGS 	0
+#define EMAC0_PHY_ADDR	0
+#define EMAC1_PHY_ADDR	4
+#define EMAC0_FLAGS 	GEMAC_NO_PHY
+#define EMAC1_FLAGS 	0
+#define EMAC2_FLAGS 	GEMAC_NO_PHY
 
 #define EXP_CS0_BASE_VAL	0x0
 #define EXP_CS0_SEG_SIZE_VAL	0x7FFF

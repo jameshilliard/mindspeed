@@ -33,6 +33,7 @@
 #include <fs.h>
 #include <asm/io.h>
 #include <asm/types.h>
+#include <asm/hardware.h>
 #include <mach/comcerto-2000.h>
 #include <mach/exp-bus.h>
 #include <generated/mach-types.h>
@@ -152,7 +153,7 @@ static struct device_d sdram_dev = {
 	.id = -1,
 	.name = "mem",
 	.map_base = 0x00000000,
-	.size = SZ_512M,
+	.size = SZ_1G,
 	.platform_data = &sdram_pdata,
 };
 
@@ -270,6 +271,11 @@ static int c2000_device_init(void)
 	writel(0x03034007, EXP_CS0_TMG1_REG);
 	writel(0x04040502, EXP_CS0_TMG2_REG);
 
+	//CS4 EXP bus Timing tune. It reduces the time to flash NAND
+	writel(0x02024004, EXP_CS4_TMG1_REG);
+	writel(0x01010101, EXP_CS4_TMG2_REG);
+	writel(0x00000001, EXP_CS4_TMG3_REG);
+
 	/* External reset to PCIe devices, Atheros Switch and FXS block, GPIO27 is used for TM_EXT_RESET*/
 	/*It seems some pcie wifi card has problem with the way external reset was being
 	  done (reset line high/delay/low/delay/high sequence) earlier. Instead simple
@@ -278,6 +284,37 @@ static int c2000_device_init(void)
 	writel(readl(COMCERTO_GPIO_OUTPUT_REG) & ~GPIO_27, COMCERTO_GPIO_OUTPUT_REG);
 	writel( readl(COMCERTO_GPIO_OE_REG) | GPIO_27, COMCERTO_GPIO_OE_REG);
 	writel(readl(COMCERTO_GPIO_OUTPUT_REG) | GPIO_27, COMCERTO_GPIO_OUTPUT_REG);
+
+#ifdef	CONFIG_COMCERTO_ULOADER
+	/*
+	 * GPIO 12: system blue LED
+	 * GPIO 13: system red LED
+	 * GPIO 14: AR8337 reset, active low
+	 * GPIO 15: USB power switch enable, active high
+	 * GPIO 44: Power Over Ethernet, needs to be set low
+	 */
+	comcerto_gpio_enable_output(GPIO_12|GPIO_13);
+	/* Turn off red LED to indicate that the uloader is running. */
+	comcerto_gpio_set_0(GPIO_13);
+	/* Leave blue LED on to indicate that the boot loader is not yet
+	 * running. */
+	comcerto_gpio_set_1(GPIO_12);
+
+	comcerto_gpio_enable_output(GPIO_14|GPIO_15);
+	comcerto_gpio_set_1(GPIO_14|GPIO_15);
+	comcerto_gpio_set_0(GPIO_14|GPIO_15);
+	comcerto_gpio_set_1(GPIO_14|GPIO_15);
+
+
+	/* GPIO[44] and CORESIGHT_D[0] are muxed on the same pin. Set pin
+	 * Select Register to select GPIO[44].  Pin Output Register is 0 by
+	 * default. */
+	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(44-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
+#endif
+#ifdef	CONFIG_COMCERTO_BOOTLOADER
+	/* Turn off blue LED to indicate the bootloader is running. */
+	comcerto_gpio_set_0(GPIO_12);
+#endif
 
 	//For 16bit ddr, reduce the size to half 
 	if (is_16bitDDR_config())

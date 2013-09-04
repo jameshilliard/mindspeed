@@ -234,7 +234,7 @@ enum {
 
 #define CFG_REFCLKFREQ_24          24000000        /* 24 MHz */
 #define CFG_REFCLKFREQ_48          48000000        /* 48 MHz */
-#define CFG_REFCLKFREQ          CFG_REFCLKFREQ_48
+#define CFG_REFCLKFREQ          CFG_REFCLKFREQ_24
 
 #define PLL_FREQ_2400	2400
 #define PLL_FREQ_1800	1800

@@ -113,16 +113,18 @@ int athrs17_init(struct mii_device *mdev)
 	 */
 	athrs17_reg_write(mdev, S17_GLOFW_CTRL1_REG, \
 			S17_BROAD_DPALL | S17_MULTI_FLOOD_DPALL | S17_UNI_FLOOD_DPALL);
-	/* FIXME bit 30 of the PWS_REG is marked as reserved in the datasheet. */
-	athrs17_reg_write(mdev, S17_PWS_REG, S17_PWS_CHIP_AR8327);
 
 	/* Set delays for MAC0 */
-	athrs17_reg_write(mdev, S17_P0PAD_MODE_REG, S17_MAC0_RGMII_EN | S17_MAC0_RGMII_TXCLK_DELAY | \
-			S17_MAC0_RGMII_RXCLK_DELAY | (1 << S17_MAC0_RGMII_TXCLK_SHIFT) | \
-			(1 << S17_MAC0_RGMII_RXCLK_SHIFT));
+	athrs17_reg_write(mdev, S17_P0PAD_MODE_REG, S17_MAC0_RGMII_EN | S17_MAC0_RGMII_TXCLK_DELAY_EN | \
+			(2 << S17_MAC0_RGMII_TXCLK_SHIFT));
+	/* PORT5_PAD_CTRL[MAC_RGMII_RXCLK_DELAY_EN] controls all RGMII interfaces (MAC0, MAC5 and MAC6)
+	 * If set, then RGMII interface RXCLK is delayed:.
+	 *   1000M:    Delay 2 ns output to CPU.
+	 *   10M/100M: Delay value depends on bits[21:20].
+	 */
+	athrs17_reg_write(mdev, S17_P5PAD_MODE_REG, S17_MAC_RGMII_RXCLK_DELAY_EN);
 	/* Set bit 24 to enable MAC0 RGMII delay; set MAC6 as PHY mode (PHY4), QCA */
-	athrs17_reg_write(mdev, S17_P6PAD_MODE_REG, S17_PHY4_RGMII_EN | S17_MAC6_RGMII_RXCLK_DELAY | \
-			(0 << S17_MAC6_RGMII_RXCLK_SHIFT));
+	athrs17_reg_write(mdev, S17_P6PAD_MODE_REG, S17_PHY4_RGMII_EN);
 	/* Disable MAC5 and MAC6 (due to PHY4), QCA */
 	athrs17_reg_write(mdev, S17_P5STATUS_REG, 0);
 	athrs17_reg_write(mdev, S17_P6STATUS_REG, 0);
