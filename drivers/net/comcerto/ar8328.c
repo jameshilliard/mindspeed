@@ -205,7 +205,6 @@ athrs17_phy_is_link_alive(struct mii_device *mdev,int phyUnit)
     if (phyHwStatus & S17_STATUS_LINK_PASS)
         return TRUE;
 
-    printf("phy%d link down\n",phyUnit);	
     return FALSE;
 }
 
@@ -218,9 +217,12 @@ athrs17_phy_is_link_alive(struct mii_device *mdev,int phyUnit)
 int
 athrs17_phy_stat(struct mii_device *mdev)
 {
+    static const char *speeds[] = {"10 Mbps", "100 Mbps", "1000 Mbps",
+	    "Reserved"};
+    unsigned  s;
     uint16_t  phyHwStatus;
     uint32_t  phyAddr;
-    int       phyUnit;	
+    int       phyUnit;
     int       ii = 200;
 
     for (phyUnit=0; phyUnit < S17_PHY_MAX; phyUnit++) {
@@ -237,11 +239,18 @@ athrs17_phy_stat(struct mii_device *mdev)
                 mdelay(10);
             }while(--ii);
             
-            phyHwStatus = ((phyHwStatus & S17_STATUS_LINK_MASK) >>
+	    printf("PHY%d",phyUnit);
+            s = ((phyHwStatus & S17_STATUS_LINK_MASK) >>
                            S17_STATUS_LINK_SHIFT);
-
-	    printf("phy%d phyhwstat:%x\n",phyUnit,phyHwStatus);
-        } 
+	    printf(" %s", speeds[s]);
+	    printf(", %s", (phyHwStatus & S17_STATUS_FULL_DEPLEX) ? "Full-duplex": "Half-duplex");
+	    printf(", %s", (phyHwStatus & S17_STATUS_MDI_CROSSOVER) ? "MDIX": "MDI");
+	    printf(", transmit pause %s", (phyHwStatus & S17_STATUS_TRANSMIT_PAUSE_EN) ? "enabled": "disabled");
+	    printf(", receive pause %s", (phyHwStatus & S17_STATUS_RECEIVE_PAUSE_EN) ? "enabled": "disabled");
+	    printf("\n");
+        } else {
+	    printf("PHY%d link down\n",phyUnit);
+	}
 
     }
     return 0;

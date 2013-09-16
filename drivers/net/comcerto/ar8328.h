@@ -435,6 +435,9 @@
 /* Phy Specific status fields */
 #define S17_STATUS_LINK_MASK                0xC000
 #define S17_STATUS_LINK_SHIFT               14
+#define S17_STATUS_RECEIVE_PAUSE_EN         (1 << 2)
+#define S17_STATUS_TRANSMIT_PAUSE_EN        (1 << 3)
+#define S17_STATUS_MDI_CROSSOVER            (1 << 6)
 #define S17_STATUS_FULL_DEPLEX              0x2000
 #define S17_STATUS_LINK_PASS                 0x0400 
 #define S17_STATUS_RESOLVED                  0x0800
