@@ -76,9 +76,9 @@ BAREBOX_CMD_END
 
 static int do_switch(struct command *cmdtp, int argc, char *argv[])
 {
-        uint16_t val;
+        unsigned int val;
 	int reg;
-	int data;
+	unsigned int data;
         struct device_d *dev;
         struct mii_device *mdev;
 	struct cdev *cdev;
@@ -100,7 +100,7 @@ static int do_switch(struct command *cmdtp, int argc, char *argv[])
 		reg = simple_strtoul(argv[2], NULL, 0);
 		val = athrs17_reg_read(mdev, reg);
 
-		printf("Addr 0x%x Val 0x%x\n", reg, val);
+		printf("Addr 0x%x Val 0x%08x\n", reg, val);
 	} 
 	else if(!strcmp(argv[1],"write"))
 	{
@@ -121,8 +121,8 @@ static const __maybe_unused char cmd_switch_help[] =
 "Usage:\n"
 "\n"
 " switch init			   initialize the AR8328 switch\n"
-" switch read phyno reg            read the switch register\n"
-" switch write phyno reg data      write the switch register\n"
+" switch read reg                  read the switch register\n"
+" switch write reg data            write the switch register\n"
 ;
 
 
