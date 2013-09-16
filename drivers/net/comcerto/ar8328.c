@@ -299,7 +299,10 @@ athrs17_phy_init(struct mii_device *mdev, int phyUnit)
 	//FIXME: Now since this function is called multiple time for each LAN PHY the overrall delay
 	//will also increase. Maybe this is not required as the phy status is being check 
 	//So this is subjected to change during the bringup
+#if 0
+	/* Disabled by danielmentz@google.com */
 	mdelay(1000);
+#endif
 
 
 	/*
