@@ -9,33 +9,36 @@
 #include <asm/io.h>
 
 #define ULOADER_PART_SIZE 0x20000 /* 128 KB */
-#define BAREBOX_PART_SIZE 0x80000 /* 256 KB */
+#define BAREBOX_PART_SIZE 0x80000
 #define BAREBOX_LODING_ADDR (COMCERTO_AXI_DDR_BASE + 0x1000000)
 
 #ifdef CONFIG_COMCERTO_NAND_ULOADER
 extern int read_nand(ulong src, ulong offset, ulong count);
 #endif
 
-#if 0 
 static int bb_timeout(int timeout)
 {
 	int ret = 1;
 	int countdown;
 	uint64_t start, second;
-	timeout = 3;
+	char c;
 
 	start = get_time_ns();
 	second = start;
 
 	countdown = timeout;
 
+	printf("Press Ctrl-C to interrupt\n");
 	printf("\n%2d", countdown--);
 
 	do {
 		if (tstc()) {
-			getc();
-			ret = 1;
-			goto  out;
+			c = getc();
+			/* User can get a barebox prompt by pressing Ctrc-C */
+			if (c == 0x3) {
+				ret = 1;
+				goto  out;
+			}
 		}
 
 		if (is_timeout(second, SECOND)) {
@@ -50,7 +53,6 @@ out:
 
 	return ret;
 }
-#endif
 
 static void bb_go(void *addr)
 {
@@ -73,11 +75,11 @@ static void bb_go(void *addr)
 	while (1);
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
+#if !defined(CONFIG_COMCERTO_NAND_ULOADER) && (defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH))
 extern int spi_copy_read(char *, unsigned int , unsigned int , unsigned int );
 #endif
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
+#if !defined(CONFIG_COMCERTO_NAND_ULOADER) && (defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH))
 static void copy_bb_from_spi_flash(char *dst, int count)
 {
         unsigned int l=0;
@@ -111,14 +113,12 @@ static int do_bootb_barebox(void)
 {
 	volatile u32 *src = (u32 *)(COMCERTO_AXI_EXP_BASE + ULOADER_PART_SIZE); /* Start of NOR + uLdr size(128K) */
 	volatile u32 *dst = (u32*)BAREBOX_LODING_ADDR;
-	int count = BAREBOX_PART_SIZE; /* 256K for Barebox */
+	int count = BAREBOX_PART_SIZE;
 	u32 bootopt;
-#if 0
-	int timeout = 3;
+	int timeout = 2;
 
 	if(bb_timeout(timeout))
 		return 0;
-#endif
 
 #ifdef CONFIG_COMCERTO_NAND_ULOADER
 	/* this option is used when uloader is in NOR flash or I2C EEPROM and 
@@ -127,6 +127,7 @@ static int do_bootb_barebox(void)
 	read_nand(BAREBOX_LODING_ADDR, 0x0, BAREBOX_PART_SIZE);
 #else
 
+#if defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH)
 	bootopt = ((readl(COMCERTO_GPIO_SYSTEM_CONFIG) >>  BOOTSTRAP_BOOT_OPT_SHIFT) & BOOTSTRAP_BOOT_OPT_MASK);
 	
 	if(!bootopt){
@@ -134,6 +135,7 @@ static int do_bootb_barebox(void)
 		printf("\nCopying Barebox from SPI Flash\n");
 		copy_bb_from_spi_flash((char*)BAREBOX_LODING_ADDR, count);
 	} else {
+#endif
 		/*
 		-With NOR boot the barebox will be loaded from NOR flash.
 		-With I2C boot the barebox will be loaded either from NOR flash or NAND. If NAND then this part of code
@@ -142,7 +144,10 @@ static int do_bootb_barebox(void)
 		*/
 		printf("\nCopying Barebox from NOR Flash\n");
 		memcpy((void *)dst, (void *)src, count);
+#if defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH)
 	}
+#endif /* */
+
 #endif
 
 	bb_go((void*)BAREBOX_LODING_ADDR);
