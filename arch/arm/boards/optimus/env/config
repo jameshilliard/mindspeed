@@ -4,7 +4,7 @@ ethact eth1
 nand_device="comcertonand"
 nand_parts="8M(reserved0),32M(kernel0),32M(kernel1),288M(rootfs0),288M(rootfs1),32M(emergency),-(data+ubi)"
 
-nor_parts="128k(uloader)ro,512k(barebox)ro,128k(env),1M(hnvram),8M(kernel),8M(initrd)"
+nor_parts="128k(uloader)ro,512k(loader0)ro,512k(loader1)ro,128k(env),1M(hnvram),8M(kernel),8M(initrd)"
 nor_device="comcertoflash.0"
 
 autoboot_timeout=2

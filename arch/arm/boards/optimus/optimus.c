@@ -329,12 +329,12 @@ static int c2000_device_init(void)
 	if(!bootopt){
 		/* ENV for SPI */
 		printf("Using ENV from SPI Flash.\n");
-		devfs_add_partition("spi0", 0xA0000, 0x20000, PARTITION_FIXED, "env0");
+		devfs_add_partition("spi0", 0x120000, 0x20000, PARTITION_FIXED, "env0");
 		protect_file("/dev/env0", 1);
 	}else{
 		/* ENV for NOR */
 		printf("Using ENV from NOR Flash.\n");
-		devfs_add_partition("nor0", 0xA0000, 0x20000, PARTITION_FIXED, "env0");
+		devfs_add_partition("nor0", 0x120000, 0x20000, PARTITION_FIXED, "env0");
 		protect_file("/dev/env0", 1);
 	}
 #endif
