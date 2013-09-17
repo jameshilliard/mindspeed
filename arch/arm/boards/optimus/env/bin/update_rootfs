@@ -1,0 +1,15 @@
+#!/bin/sh
+
+ping $eth1.serverip
+if [ $? != 0 ]; then
+	echo server unreachable
+	exit
+fi
+echo "Erasing rootfs0 partition"
+erase /dev/nand0.rootfs0
+echo "ubiattach"
+ubiattach /dev/nand0.rootfs0
+echo "Creating UBI volume rootfs"
+ubimkvol /dev/ubi0 rootfs 110M
+echo "TFTPing rootfs into UBI volume"
+tftp rootfs.squashfs /dev/ubi0.rootfs

@@ -1,0 +1,4 @@
+PATH=/env/bin
+
+update_kernel
+update_rootfs

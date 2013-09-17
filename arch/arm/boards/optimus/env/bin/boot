@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. /env/config
+
+mtdparts="${nor_device}:${nor_parts};${nand_device}:${nand_parts}"
+bootargs="${bootargs} mtdparts=${mtdparts}"
+
+bootm -r /dev/nor0.initrd /dev/nor0.kernel
