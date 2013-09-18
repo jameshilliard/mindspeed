@@ -448,7 +448,11 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 		err_corr_data_prev = readl(ECC_CORR_DATA_STAT);
 		if ((err_corr_data_prev >> ECC_BCH_INDEX_SHIFT) == 0x87FD)
 			break;
-		udelay(1);
+		// This delay seems to be necessary.  Without it, error
+		// correction fails sometimes when running out of IRAM, which
+		// I guess is faster than normal RAM.
+		udelay(15);
+		// udelay(1);
 		dev_dbg(mtd->dev, "Polling ECC_CORR_DATA_STAT!!!! \n");
 	} while (!is_timeout(start, SECOND * 2));
 
