@@ -103,12 +103,14 @@ static int register_default_env(void)
 device_initcall(register_default_env);
 #endif
 
-#if defined CONFIG_FS_RAMFS && defined CONFIG_FS_DEVFS
+#if defined CONFIG_FS_RAMFS
 static int mount_root(void)
 {
 	mount("none", "ramfs", "/");
+#if defined CONFIG_FS_DEVFS
 	mkdir("/dev", 0);
 	mount("none", "devfs", "/dev");
+#endif
 	return 0;
 }
 fs_initcall(mount_root);
