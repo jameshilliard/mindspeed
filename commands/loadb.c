@@ -693,7 +693,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 	int load_baudrate = 0, current_baudrate;
 	int rcode = 0;
 	int opt;
-	int open_mode = O_WRONLY;
+	int open_mode = O_WRONLY | O_CREAT;
 	char *output_file = NULL;
 	struct console_device *cdev = NULL;
 
@@ -712,7 +712,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 			open_mode |= O_CREAT;
 			break;
 		default:
-			perror(argv[0]);
+			printk("%s: unknown option %c\n", argv[0], opt);
 			return 1;
 		}
 	}
@@ -733,7 +733,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 	/* File should exist */
 	ofd = open(output_file, open_mode);
 	if (ofd < 0) {
-		perror(argv[0]);
+		perror(output_file);
 		return 3;
 	}
 	/* Seek to the right offset */
@@ -742,7 +742,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 		if (seek != offset) {
 			close(ofd);
 			ofd = 0;
-			perror(argv[0]);
+			perror("lseek");
 			return 4;
 		}
 	}
