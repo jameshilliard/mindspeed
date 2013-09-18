@@ -130,7 +130,6 @@ static uint8_t nand_read_byte16(struct mtd_info *mtd)
 	return (uint8_t) cpu_to_le16(readw(chip->IO_ADDR_R));
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_read_word - [DEFAULT] read one word from the chip
  * @mtd:	MTD device structure
@@ -143,7 +142,6 @@ static u16 nand_read_word(struct mtd_info *mtd)
 	struct nand_chip *chip = mtd->priv;
 	return readw(chip->IO_ADDR_R);
 }
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 /**
  * nand_select_chip - [DEFAULT] control CE line
@@ -184,7 +182,6 @@ static void nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 		buf[i] = readb(chip->IO_ADDR_R);
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_verify_buf - [DEFAULT] Verify chip data against buffer
  * @mtd:	MTD device structure
@@ -203,7 +200,6 @@ static int nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 			return -EFAULT;
 	return 0;
 }
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 /**
  * nand_read_buf16 - [DEFAULT] read chip data into buffer
@@ -224,7 +220,6 @@ static void nand_read_buf16(struct mtd_info *mtd, uint8_t *buf, int len)
 		p[i] = readw(chip->IO_ADDR_R);
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_verify_buf16 - [DEFAULT] Verify chip data against buffer
  * @mtd:	MTD device structure
@@ -246,7 +241,6 @@ static int nand_verify_buf16(struct mtd_info *mtd, const uint8_t *buf, int len)
 
 	return 0;
 }
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 /**
  * nand_block_bad - [DEFAULT] Read bad block marker from the chip
@@ -332,7 +326,6 @@ void nand_wait_ready(struct mtd_info *mtd)
 }
 EXPORT_SYMBOL(nand_wait_ready);
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_command - [DEFAULT] Send command to NAND device
  * @mtd:	MTD device structure
@@ -435,7 +428,6 @@ static void nand_command(struct mtd_info *mtd, unsigned int command,
 	nand_wait_ready(mtd);
 }
 
-#endif  /* CONFIG_COMCERTO_NAND_ULOADER */
 /**
  * nand_command_lp - [DEFAULT] Send command to NAND large page device
  * @mtd:	MTD device structure
@@ -618,7 +610,6 @@ static int nand_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip,
 	return 0;
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_transfer_oob - [Internal] Transfer oob to client buffer
  * @chip:	nand chip structure
@@ -669,7 +660,6 @@ static uint8_t *nand_transfer_oob(struct nand_chip *chip, uint8_t *oob,
 }
 #endif
 
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 /**
  * nand_do_read_ops - [Internal] Read data with ECC
  *
@@ -845,7 +835,6 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	return ret;
 }
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 /**
  * nand_read_oob_std - [REPLACABLE] the most common OOB data read function
  * @mtd:	mtd info structure
@@ -999,7 +988,6 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
 	return ret;
 }
 #endif
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 /**
  * nand_block_isbad - [MTD Interface] Check if block at offset is bad
@@ -1115,13 +1103,9 @@ static void nand_set_defaults(struct nand_chip *chip, int busw)
 	if (!chip->chip_delay)
 		chip->chip_delay = 20;
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	/* check, if a user supplied command function given */
 	if (chip->cmdfunc == NULL)
 		chip->cmdfunc = nand_command;
-#else
-		chip->cmdfunc = nand_command_lp;
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 	/* check, if a user supplied wait function given */
 	if (chip->waitfunc == NULL)
@@ -1131,27 +1115,21 @@ static void nand_set_defaults(struct nand_chip *chip, int busw)
 		chip->select_chip = nand_select_chip;
 	if (!chip->read_byte)
 		chip->read_byte = busw ? nand_read_byte16 : nand_read_byte;
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	if (!chip->read_word)
 		chip->read_word = nand_read_word;
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 	if (!chip->block_bad)
 		chip->block_bad = nand_block_bad;
 #ifdef CONFIG_NAND_WRITE
 	if (!chip->block_markbad)
 		chip->block_markbad = nand_default_block_markbad;
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	if (!chip->write_buf)
 		chip->write_buf = busw ? nand_write_buf16 : nand_write_buf;
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 #endif
 	if (!chip->read_buf)
 		chip->read_buf = busw ? nand_read_buf16 : nand_read_buf;
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	if (!chip->verify_buf)
 		chip->verify_buf = busw ? nand_verify_buf16 : nand_verify_buf;
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 #ifdef CONFIG_NAND_BBT
 	if (!chip->scan_bbt)
@@ -1435,11 +1413,9 @@ ident_done:
 		chip->erase_cmd = single_erase_cmd;
 #endif
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	/* Do not replace user supplied command function ! */
 	if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
 		chip->cmdfunc = nand_command_lp;
-#endif
 
 	printk("NAND device: Manufacturer ID: 0x%02x, Chip ID: 0x%02x (%s %s),"
 		" page size: %d, OOB size: %d\n",
@@ -1593,9 +1569,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 #ifdef CONFIG_NAND_ECC_HW_SYNDROME
 	case NAND_ECC_HW_SYNDROME:
 		nand_check_hwecc(mtd, chip);
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 		nand_init_ecc_hw_syndrome(chip);
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 		break;
 #endif
 #ifdef CONFIG_NAND_ECC_SOFT
@@ -1613,12 +1587,12 @@ int nand_scan_tail(struct mtd_info *mtd)
 		chip->ecc.correct = nand_bch_correct_data;
 		chip->ecc.read_page = nand_read_page_swecc;
 		chip->ecc.read_subpage = nand_read_subpage;
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
+#ifdef CONFIG_NAND_WRITE
 		chip->ecc.write_page_raw = nand_write_page_raw;
 		chip->ecc.write_page = nand_write_page_swecc;
 		chip->ecc.write_oob = nand_write_oob_std;
-		chip->ecc.read_oob = nand_read_oob_std;
 #endif
+		chip->ecc.read_oob = nand_read_oob_std;
 		chip->ecc.read_page_raw = nand_read_page_raw;
 		/*
 		 * Board driver should supply ecc.size and ecc.bytes values to

@@ -32,8 +32,6 @@
 
 #include "nand.h"
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
-
 #define BBD_ID_0		0xDEADBEEF
 #define BBD_ID_1		0xECC0ECC0
 #define MAX_BLOCKS_WITH_BBT	12
@@ -44,8 +42,6 @@
 #define ECC_BLK_MARK_SET_0_SIZE (1024 - BBT_STRUCT_SIZE_EXCLUDING_BLK_MARK)
 
 #define IRAM_PAYLOAD_SEGMENT_SIZE	0xC000
-
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 uint32_t temp_nand_ecc_errors[4];
 
@@ -129,7 +125,6 @@ static struct nand_ecclayout comcerto_ecc_info_1024_hamm = {
 };
 #endif
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 static uint8_t bbt_pattern[] = { 'B', 'b', 't', '0' };
 static uint8_t mirror_pattern[] = { '1', 't', 'b', 'B' };
 
@@ -152,7 +147,6 @@ static struct nand_bbt_descr bbt_mirror_descr = {
 	.maxblocks = 8,
 	.pattern = mirror_pattern,
 };
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 static uint8_t scan_ff_pattern[] = {0xff};
 
@@ -170,8 +164,6 @@ static struct nand_bbt_descr c2000_badblock_pattern = {
 };
 #endif
 
-
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 
 struct boot_sector_layout {
         uint32_t nand_block_size;            /* get from nand_init           */
@@ -222,15 +214,12 @@ struct bad_block_table {
                                            equal to the NAND ECC block size */
 };
 
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 /*
  * MTD structure for Comcerto board
  */
 struct comcerto_nand_info {
 	struct mtd_info *mtd;
 };
-
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 
 /*Scan the nand flash to find the stored BBT and copy it into RAM.
  *
@@ -324,8 +313,6 @@ static int comcerto_block_isbad(struct mtd_info *mtd, loff_t offs)
 		return 1;
 	return 0;
 }
-
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 
 /** Disable/Enable shifting of data to parity module
  *
@@ -849,12 +836,10 @@ static int comcerto_nand_probe(struct device_d *pdev)
 
 	nand_device->badblock_pattern = &c2000_badblock_pattern;
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
 	nand_device->bbt_td = &bbt_main_descr;
 	nand_device->bbt_md = &bbt_mirror_descr;
 	/* update flash based bbt */
 //	nand_device->options |= NAND_USE_FLASH_BBT;
-#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 #endif
 
 	}
@@ -863,7 +848,7 @@ static int comcerto_nand_probe(struct device_d *pdev)
 	nand_device->scan_bbt = comcerto_scan_bbt;
 #endif
 
-#ifndef CONFIG_COMCERTO_NAND_ULOADER
+#ifdef CONFIG_NAND_ECC_HW_SYNDROME
 	nand_init_ecc_hw_syndrome(nand_device);
 #endif
 
