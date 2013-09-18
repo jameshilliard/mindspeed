@@ -88,6 +88,7 @@ BAREBOX_CMD_END
 
 #endif /* CONFIG_COMCERTO_NAND_ERASE_FBB */
 
+#ifdef CONFIG_NAND_WRITE
 int erase_nand(ulong offset, ulong count)
 {
         struct cdev *cdev;
@@ -223,6 +224,7 @@ BAREBOX_CMD_START(update_nand)
         .usage          = "Flash the NAND",
 	BAREBOX_CMD_HELP(cmd_nand_help)
 BAREBOX_CMD_END
+#endif  /* CONFIG_NAND_WRITE */
 
 int read_nand(ulong src, ulong offset, ulong count)
 {

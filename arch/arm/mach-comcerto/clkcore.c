@@ -5,6 +5,8 @@
 #include <mach/clkcore.h>
 #include <mach/gpio.h>
 
+#define inline
+
 #if defined(CONFIG_COMCERTO_PLL)
 
 static inline void HAL_set_clock_divider(int clk_freq, int pll_src, u32 reg);
