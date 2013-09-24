@@ -665,7 +665,7 @@ barebox.bin: barebox FORCE
 
 uloader.bin: uloader
 
-uloader:
+uloader: barebox.bin
 	$(shell cp barebox.bin ./tools/ImageGenarator/.; cd $(srctree)/tools/ImageGenarator/; \
 		 chmod 755 *.sh; ./uldr_gen.sh 1>/dev/null;)
 
