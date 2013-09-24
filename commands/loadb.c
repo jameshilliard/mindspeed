@@ -600,6 +600,10 @@ err_quit:
 #endif				/* CONFIG_CMD_LOADB */
 
 #ifdef CONFIG_CMD_LOADY
+
+unsigned long dst_ddr_address = 0x0;
+int dst_ddr = 0;
+
 /**
  * @brief getcxmodem
  *
@@ -625,7 +629,10 @@ static ulong load_serial_ymodem(void)
 	int res, wr;
 	connection_info_t info;
 	char ymodemBuf[1024];
-	ulong addr = 0;
+	void *addr = 0;
+
+	if (dst_ddr)
+		addr = (void *)dst_ddr_address;
 
 	size = 0;
 	info.mode = xyzModem_ymodem;
@@ -634,7 +641,13 @@ static ulong load_serial_ymodem(void)
 		while ((res = xyzModem_stream_read(ymodemBuf, 1024, &err)) >
 				0) {
 			size += res;
-			addr += res;
+
+			if (dst_ddr) {
+				memcpy(addr, ymodemBuf, res);
+				addr += res;
+				continue;
+			}
+
 			wr = write(ofd, ymodemBuf, res);
 			if (res != wr) {
 				perror("ymodem");
@@ -697,7 +710,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 	char *output_file = NULL;
 	struct console_device *cdev = NULL;
 
-	while ((opt = getopt(argc, argv, "f:b:o:c")) > 0) {
+	while ((opt = getopt(argc, argv, "f:b:o:ca:")) > 0) {
 		switch (opt) {
 		case 'f':
 			output_file = optarg;
@@ -710,6 +723,15 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 			break;
 		case 'c':
 			open_mode |= O_CREAT;
+			break;
+		case 'a':
+			dst_ddr = 1;
+			offset = (int)simple_strtoul(optarg, NULL, 10);
+			if (optarg[0] == '-') {
+				printk("%s: bad offset '%s'\n",
+					argv[0], optarg);
+				return 1;
+			}
 			break;
 		default:
 			printk("%s: unknown option %c\n", argv[0], opt);
@@ -730,6 +752,11 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 	if (NULL == output_file)
 		output_file = DEF_FILE;
 
+	if (dst_ddr) {
+		dst_ddr_address = offset;
+		goto skip_file_open;
+	}
+
 	/* File should exist */
 	ofd = open(output_file, open_mode);
 	if (ofd < 0) {
@@ -747,6 +774,7 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 		}
 	}
 
+skip_file_open:
 	if (load_baudrate != current_baudrate) {
 		printf("## Switch baudrate to %d bps and press ENTER ...\n",
 		       load_baudrate);
@@ -760,9 +788,14 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 	}
 #ifdef CONFIG_CMD_LOADY
 	if (strcmp(argv[0], "loady") == 0) {
-		printf("## Ready for binary (ymodem) download "
-		       "to 0x%08lX offset on %s device at %d bps...\n", offset,
-		       output_file, load_baudrate);
+		if (dst_ddr) {
+			printf("## Ready for binary (ymodem) download "
+				"to 0x%08lX on DDR at %d bps...\n", dst_ddr_address, load_baudrate);
+		} else {
+			printf("## Ready for binary (ymodem) download "
+				"to 0x%08lX offset on %s device at %d bps...\n", offset,
+			output_file, load_baudrate);
+		}
 		addr = load_serial_ymodem();
 	}
 #endif
@@ -791,18 +824,24 @@ static int do_load_serial_bin(struct command *cmdtp, int argc, char *argv[])
 		}
 	}
 
-	close(ofd);
-	ofd = 0;
+	if (dst_ddr) {
+		dst_ddr = 0;
+	} else {
+		close(ofd);
+		ofd = 0;
+	}
+
 	return rcode;
 }
 
 static const __maybe_unused char cmd_loadb_help[] =
     "[OPTIONS]\n"
     "  -f file   - where to download to - defaults to " DEF_FILE "\n"
-    "  -o offset - what offset to download - defaults to 0\n"
+    "  -o offset - what offset in file to download - defaults to 0\n"
     "  -b baud   - baudrate at which to download - defaults to "
     "console baudrate\n"
-    "  -c        - Create file if it is not present - default disabled";
+    "  -c        - Create file if it is not present - default enabled\n"
+    "  -a offset - upload to DRAM address <offset> instead of a file\n";
 #ifdef CONFIG_CMD_LOADB
 BAREBOX_CMD_START(loadb)
 	.cmd = do_load_serial_bin,
