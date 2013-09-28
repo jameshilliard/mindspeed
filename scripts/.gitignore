@@ -4,3 +4,4 @@ mkimage
 kallsyms
 gen_netx_image
 omap_signGP
+pfe_fw_convert

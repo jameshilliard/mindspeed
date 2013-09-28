@@ -720,7 +720,7 @@ PHONY += $(barebox-dirs)
 $(barebox-dirs): prepare scripts pfe_fw-prepare
 	$(Q)$(MAKE) $(build)=$@
 
-pfe_fw-prepare:
+pfe_fw-prepare: scripts
 ifneq ($(KBUILD_MODULES),)
 	ln -fsn $(srctree)/fw fw;
 endif
