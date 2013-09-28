@@ -72,9 +72,12 @@ int nand_default_block_markbad(struct mtd_info *mtd, loff_t ofs)
 		chip->bbt[block >> 2] |= 0x01 << ((block & 0x03) << 1);
 
 	/* Do we have a flash based bad block table ? */
+#ifdef CONFIG_NAND_BBT
 	if (chip->options & NAND_USE_FLASH_BBT)
 		ret = nand_update_bbt(mtd, ofs);
-	else {
+	else
+#endif
+	{
 		/* We write two bytes, so we dont have to mess with 16 bit
 		 * access
 		 */
@@ -711,6 +714,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 	if (bbt_masked_page == 0xffffffff || ret)
 		return ret;
 
+#ifdef CONFIG_NAND_BBT
 	for (chipnr = 0; chipnr < chip->numchips; chipnr++) {
 		if (!rewrite_bbt[chipnr])
 			continue;
@@ -720,7 +724,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		      chip->bbt_td->pages[chipnr]);
 		nand_update_bbt(mtd, rewrite_bbt[chipnr]);
 	}
-
+#endif
 	/* Return more or less happy */
 	return ret;
 }
