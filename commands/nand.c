@@ -61,12 +61,14 @@ static int do_nand(struct command *cmdtp, int argc, char *argv[])
 	}
 
 	if (command & NAND_ADD) {
+		int ret = 0;
 		while (optind < argc) {
 			if (dev_add_bb_dev(basename(argv[optind]), NULL))
-				return 1;
+				ret = 1;
 
 			optind++;
 		}
+		if (ret) return ret;
 	}
 
 	if (command & NAND_DEL) {
