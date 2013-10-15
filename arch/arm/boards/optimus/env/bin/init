@@ -8,25 +8,32 @@ export PATH
 addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
 
-# We would like to run "nand -a /dev/nand0.*" here, but we cannot. The shell
-# expands /dev/nand0.* before it starts executing this script, but the device
-# files that match /dev/nand0.* appear only after the "addpart /dev/nand0
-# $nand_parts" command. Hence, we need to create a separate script to execute
-# just this command.
-source /env/bin/nand_a_dev_nand0.star
+hnvram from /dev/nor0.hnvram
+if [ "$HNV_ACTIVATED_KERNEL_NAME" = kernel1 ]; then
+  kernpart=kernel1
+  rootpart=rootfs1
+else
+  kernpart=kernel0
+  rootpart=rootfs0
+fi
+export kernpart
+export rootpart
 
 echo
 echo -n "Hit Ctrl-C to stop autoboot: "
 timeout -c $autoboot_timeout
-if [ $? != 0 ]; then
-	echo 'Run DHCP client by typing "dhcp" or manually set IP address using'
-	echo '  eth1.ipaddr=192.168.1.1'
-	echo '  eth1.netmask=255.255.255.0'
-	echo '  eth1.serverip=192.168.1.2'
-	exit
+if [ $? = 0 ]; then
+	boot
+	echo 'Autoboot failed.'
 fi
 if frbutton; then
 	remote_controlled
 else
 	boot
 fi
+
+echo
+echo 'Run DHCP client by typing "dhcp" or manually set IP address using'
+echo '  eth1.ipaddr=192.168.1.1'
+echo '  eth1.serverip=192.168.1.2'
+echo

@@ -13,4 +13,4 @@ nor_device="comcertoflash.0"
 
 autoboot_timeout=2
 
-bootargs="console=ttyS0,115200n8, login=1 root=rootfs0"
+bootargs="console=ttyS0,115200n8, login=1"

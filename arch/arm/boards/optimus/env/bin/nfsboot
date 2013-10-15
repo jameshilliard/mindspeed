@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /env/config
+
+mtdparts="${nor_device}:${nor_parts};${nand_device}:${nand_parts}"
+bootargs="${bootargs} mtdparts=${mtdparts} root=${eth1.serverip}:/mr"
+bootargs="${bootargs} ip=${eth1.ipaddr}::${eth1.gateway}::rg:wan0:off"
+
+tftp gfrg200.img
+bootm gfrg200.img
