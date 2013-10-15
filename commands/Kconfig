@@ -45,6 +45,11 @@ config CMD_PRINTENV
 	depends on ENVIRONMENT_VARIABLES
 	prompt "printenv"
 
+config CMD_HNVRAM
+	tristate
+	depends on ENV_HANDLING
+	prompt "hnvram"
+
 config CMD_READLINE
 	tristate
 	prompt "readline"
