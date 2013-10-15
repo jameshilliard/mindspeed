@@ -431,7 +431,7 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 
 	if ((readl(ECC_CORR_STAT)) & ECC_UNCORR) {
 		temp_nand_ecc_errors[0] += 1 ;
-		printf("ECC Uncorrectable Errors found!!!! \n");
+		printf("E");
 		MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC Uncorrectable Errors found!!!! \n");
 		MTD_DEBUG(MTD_DEBUG_LEVEL3, "No. of errors %d \n", err_count);
 		return -EIO;
