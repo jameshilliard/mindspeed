@@ -292,6 +292,8 @@ static int c2000_device_init(void)
 	 * GPIO 14: AR8337 reset, active low
 	 * GPIO 15: USB power switch enable, active high
 	 * GPIO 44: Power Over Ethernet, needs to be set low
+	 * GPIO 48: Power enable for high power wifi 11AC 4.2V PA, needs to be
+	 *          set high
 	 */
 	comcerto_gpio_enable_output(GPIO_12|GPIO_13);
 	/* Turn off red LED to indicate that the uloader is running. */
@@ -310,6 +312,11 @@ static int c2000_device_init(void)
 	 * Select Register to select GPIO[44].  Pin Output Register is 0 by
 	 * default. */
 	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(44-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
+	/* GPIO[48] and CORESIGHT_D[4] are muxed on the same pin. Set pin
+	 * Select Register to select GPIO[48]. */
+	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
+	/* Set GPIO[48] to high */
+	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_OUTPUT_REG);
 #endif
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	/* Turn off blue LED to indicate the bootloader is running. */
