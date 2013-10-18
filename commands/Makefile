@@ -69,3 +69,4 @@ obj-$(CONFIG_CMD_PFE_DIAGS)	+= c2000_pfe_diags.o
 obj-$(CONFIG_CMD_AR8328)	+= atheros.o
 obj-$(CONFIG_CMD_COPY)		+= copy.o
 obj-$(CONFIG_CMD_SATA)		+= sata.o
+obj-$(CONFIG_CMD_FRBUTTON)	+= frbutton.o

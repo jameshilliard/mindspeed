@@ -495,6 +495,15 @@ config CMD_SATA
 
 endmenu
 
+config CMD_FRBUTTON
+	bool
+	depends on MACH_OPTIMUS
+	prompt "Status of Optimus Factory Reset Button"
+	default y
+	help
+	  The factory reset button on Optimus is connected to GPIO 6. This
+	  command returns true if the button is currently held down.
+
 endmenu
 
 endif
