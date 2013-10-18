@@ -4,5 +4,6 @@
 
 mtdparts="${nor_device}:${nor_parts};${nand_device}:${nand_parts}"
 bootargs="${bootargs} mtdparts=${mtdparts}"
+bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr}"
 
 bootm -r /dev/nor0.initrd /dev/nor0.kernel

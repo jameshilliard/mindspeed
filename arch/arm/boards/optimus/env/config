@@ -1,6 +1,10 @@
 #!/bin/sh
 ethact eth1
 
+if [ -f /env/ethaddrs ]; then
+	. /env/ethaddrs
+fi
+
 nand_device="comcertonand"
 nand_parts="8M(reserved0),32M(kernel0),32M(kernel1),288M(rootfs0),288M(rootfs1),32M(emergency),-(data+ubi)"
 
