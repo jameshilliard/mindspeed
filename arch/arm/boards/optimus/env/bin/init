@@ -25,5 +25,8 @@ if [ $? != 0 ]; then
 	echo '  eth1.serverip=192.168.1.2'
 	exit
 fi
-
-boot
+if frbutton; then
+	remote_controlled
+else
+	boot
+fi
