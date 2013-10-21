@@ -28,14 +28,14 @@ static int bb_timeout(int timeout)
 
 	countdown = timeout;
 
-	printf("Press Ctrl-C to interrupt\n");
+	printf("Press Ctrl-X to interrupt");
 	printf("\n%2d", countdown--);
 
 	do {
 		if (tstc()) {
 			c = getc();
-			/* User can get a barebox prompt by pressing Ctrc-C */
-			if (c == 0x3) {
+			/* User can get a barebox prompt by pressing Ctrl-X */
+			if (c == 24) {
 				ret = 1;
 				goto  out;
 			}
@@ -115,7 +115,7 @@ static int do_bootb_barebox(void)
 	volatile u32 *dst = (u32*)BAREBOX_LODING_ADDR;
 	int count = BAREBOX_PART_SIZE;
 	u32 bootopt;
-	int timeout = 2;
+	int timeout = 1;
 
 	if(bb_timeout(timeout))
 		return 0;
