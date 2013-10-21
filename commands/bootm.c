@@ -162,7 +162,7 @@ struct image_handle *map_image(const char *filename, int verify)
 		return NULL;
 	}
 
-	handle = xzalloc(sizeof(struct image_handle));
+	handle = xzalloc(sizeof(struct image_handle) * 2);
 	header = &handle->header;
 
 	if (read(fd, header, image_get_header_size()) < 0) {
@@ -216,6 +216,119 @@ struct image_handle *map_image(const char *filename, int verify)
 
 	close(fd);
 
+	/*
+	 * Multi-file uImage support.  If this is a multi-file uImage, then
+	 * the header will say so, and the blobs in the file are in this
+	 * predefined sequence: kernel, initrd, devicetree, [other...].
+	 *
+	 * The code above has already verified the checksum of the entire
+	 * thing (ie. all blobs together) and loaded it all into a single
+	 * RAM location.  Each blob in the file is already aligned to the
+	 * nearest 32 bits.  So now we just need to appease the loader by
+	 * producing one image_handle for each blob and creating "virtual"
+	 * headers for each one.
+	 *
+	 * Earlier versions of this function returned only one handle.  Now
+	 * we return an array of handles, terminated with a handle that
+	 * is all-zeroes (in particular, the 'data' field is NULL).  Other
+	 * than the code for unmap_image(), this is backward compatible with
+	 * the old return value.
+	 */
+	if (image_get_type(header) == IH_TYPE_MULTI) {
+		/*
+		 * The bloblen section precedes the actual blobs.
+		 * It's a series of 32-bit blob lengths, terminated
+		 * by a 0.
+		 */
+		int numblobs, i, fixup;
+		uint32_t *bloblen = handle->data, blobofs;
+
+		printf("Multi-file uImage detected.\n");
+
+		for (numblobs = 0; bloblen[numblobs]; numblobs++) { }
+		if (!numblobs) {
+			printf("Weird: multi-file image with zero blobs?\n");
+			return handle;  /* leave header intact */
+		}
+
+		fixup = (numblobs + 1) * 4;
+		blobofs = fixup;
+
+		handle = xrealloc(handle,
+			sizeof(struct image_handle) * (numblobs + 1));
+		memset(&handle[1], 0,
+			sizeof(struct image_handle) * numblobs);
+
+		/*
+		 * The kernel data area might be malloc'd, which means we
+		 * can't just adjust handle[0].data to skip the bloblen[]
+		 * header, because that would stop free() from working.
+		 * Instead, move the load address backward so that the kernel
+		 * itself will end up being loaded where it's supposed to be.
+		 *
+		 * We also have to set the size of the kernel to include
+		 * the bloblen[] array.
+		 */
+		image_set_load(&handle[0].header,
+			image_get_load(&handle[0].header) - fixup);
+		image_set_size(&handle[0].header,
+			uimage_to_cpu(bloblen[0]) + fixup);
+
+		for (i = 0; i < numblobs; i++) {
+			uint32_t type = 0;
+			uint32_t len = uimage_to_cpu(bloblen[i]);
+			if (i != 0) {
+				memcpy(&handle[i], &handle[0],
+					sizeof(handle[0]));
+				handle[i].data = handle[0].data + blobofs;
+
+				/*
+				 * Blobs other than the first are not
+				 * themselves separately malloc'd.
+				 */
+				handle[i].flags &= ~IH_MALLOC;
+
+				/*
+				 * The load address is only supplied for the
+				 * first blob, which is the kernel. The others
+				 * can be loaded anywhere; just set the load
+				 * address to indicate their current location.
+				 *
+				 * NOTE(apenwarr): Sensitive to memory map.
+				 * The ARM kernel (at least) writes over
+				 * very low memory, plus memory right after
+				 * the kernel image, during boot.  This code
+				 * works only because in our situation we
+				 * put the malloc() area fairly high in RAM,
+				 * which the kernel doesn't overwrite until
+				 * it finishes extracting the initrd.
+				 */
+				image_set_load(&handle[i].header,
+					(uint32_t)handle[i].data);
+				image_set_size(&handle[i].header, len);
+				image_set_ep(&handle[i].header, 0);
+			}
+
+			switch (i) {
+			case 0: type = IH_TYPE_KERNEL; break;
+			case 1: type = IH_TYPE_RAMDISK; break;
+			case 2: type = IH_TYPE_FLATDT; break;
+			default: type= IH_TYPE_INVALID; break;
+			}
+			image_set_type(&handle[i].header, type);
+
+			printf("Blob #%d: load=%08x len=%08x ptr=%p %s\n", i,
+				image_get_load(&handle[i].header),
+				image_get_size(&handle[i].header),
+				handle[i].data,
+				image_get_type_name(
+					image_get_type(&handle[i].header)));
+
+			/* all blobs are 32-bit aligned */
+			blobofs += (len + 3) & ~3;
+		}
+	}
+
 	return handle;
 err_out:
 	close(fd);
@@ -228,9 +341,14 @@ EXPORT_SYMBOL(map_image);
 
 void unmap_image(struct image_handle *handle)
 {
-	if (handle->flags & IH_MALLOC)
-		free(handle->data);
-	free(handle);
+	struct image_handle *first_handle = handle;
+	while (handle->data) {
+		if (handle->flags & IH_MALLOC)
+			free(handle->data);
+		handle->data = NULL;
+		handle++;
+	}
+	free(first_handle);
 }
 EXPORT_SYMBOL(unmap_image);
 
@@ -338,6 +456,8 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 	if (!os_handle)
 		return 1;
 	data.os = os_handle;
+	if (!data.initrd && os_handle[1].data)
+		data.initrd = &os_handle[1];
 
 	os_header = &os_handle->header;
 
