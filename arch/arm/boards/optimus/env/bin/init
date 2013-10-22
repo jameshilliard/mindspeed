@@ -23,13 +23,12 @@ echo
 echo -n "Hit Ctrl-C to stop autoboot: "
 timeout -c $autoboot_timeout
 if [ $? = 0 ]; then
-	boot
+	if frbutton; then
+		remote_controlled
+	else
+		boot
+	fi
 	echo 'Autoboot failed.'
-fi
-if frbutton; then
-	remote_controlled
-else
-	boot
 fi
 
 echo
