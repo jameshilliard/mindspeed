@@ -836,6 +836,31 @@ static int comcerto_nand_probe(struct device_d *pdev)
 
 	nand_device->badblock_pattern = &c2000_badblock_pattern;
 
+#ifdef CONFIG_NAND_COMCERTO_ECC_24_HW_BCH
+	/*
+	 * When using comcerto hardware error correction, the block layout
+	 * is unusual.  Normally we'd have 4 x 1024 bytes of data, followed
+	 * by 4 * 56 bytes of OOB.  But because of the way the hardware
+	 * driver works, we actually have 4 x (1024 + 56) bytes (ie. the OOB
+	 * is interspersed with the data).  The first 42 bytes of each OOB
+	 * section is ECC, followed by 14 bytes of leftover.  The bad block
+	 * position is c2000_badblock_pattern.offs bytes *after* the first
+	 * data block (1024 bytes), not after 4096 bytes. But CMD_READOOB
+	 * is implemented by adding 4096 to the desired OOB address. So to
+	 * get the right answer, we have to remove the 4096 and add 1024
+	 * instead.
+	 *
+	 * If c2000_badblock_pattern.offs were >= 56, we'd have to do
+	 * something even more complicated (to find a spot after the second,
+	 * third, or fourth blocks).  But let's ignore that since it's not
+	 * the case.
+	 */
+	nand_device->badblockpos =
+		nand_device->ecc.size          /* 1024 */
+		+ c2000_badblock_pattern.offs  /* 42 */
+		- mtd->writesize;              /* -4096 */
+#endif
+
 	nand_device->bbt_td = &bbt_main_descr;
 	nand_device->bbt_md = &bbt_mirror_descr;
 	/* update flash based bbt */
