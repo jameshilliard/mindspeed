@@ -9,7 +9,7 @@ addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
 
 hnvram from /dev/nor0.hnvram
-if [ "$HNV_ACTIVATED_KERNEL_NAME" = kernel1 ]; then
+if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
   kernpart=kernel1
   rootpart=rootfs1
 else
