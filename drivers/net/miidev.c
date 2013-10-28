@@ -138,7 +138,11 @@ int miidev_wait_aneg(struct mii_device *mdev)
 			printf("%s: Autonegotiation failed. status: 0x%04x\n", mdev->cdev.name, status);
 			return -1;
 		}
-	} while (!(status & BMSR_ANEGCOMPLETE));
+		/* At times, we read 0xFFFF from MII_BMSR which is clearly not
+		 * a valid value for this register. Some of the bits are
+		 * "always 0" according to the data sheet for QCA8337.  Repeat
+		 * the read operation in this case. */
+	} while (!(status & BMSR_ANEGCOMPLETE) || status == 0xFFFF);
 
 	return 0;
 }
