@@ -57,6 +57,7 @@ int Comcerto_ddr_test (struct diags_test_param *p)
 #ifdef CONFIG_COMCERTO_VERIFICATION
 	set_addr_val(curr, no_of_tests);
 #endif
+	return 0;
 }
 
 static void output_result(char *out_str, int res)
