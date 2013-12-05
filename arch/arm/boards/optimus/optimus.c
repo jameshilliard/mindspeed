@@ -272,7 +272,7 @@ static int c2000_device_init(void)
 	writel(0x04040502, EXP_CS0_TMG2_REG);
 
 	//CS4 EXP bus Timing tune. It reduces the time to flash NAND
-	writel(0x02024004, EXP_CS4_TMG1_REG);
+	writel(0x01010001, EXP_CS4_TMG1_REG);
 	writel(0x01010101, EXP_CS4_TMG2_REG);
 	writel(0x00000001, EXP_CS4_TMG3_REG);
 
