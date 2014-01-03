@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. /env/config
+. /default/config
 
 mtdparts="${nor_device}:${nor_parts};${nand_device}:${nand_parts}"
 bootargs="${bootargs} mtdparts=${mtdparts} root=${eth1.serverip}:/mr"

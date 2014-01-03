@@ -1,9 +1,9 @@
 #!/bin/sh
 
-PATH=/env/bin
+PATH=/default/bin
 export PATH
 
-. /env/config
+. /default/config
 
 addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts

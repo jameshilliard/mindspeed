@@ -146,20 +146,20 @@ void start_barebox (void)
 	display_meminfo();
 
 #ifdef CONFIG_ENV_HANDLING
-	if (envfs_load(default_environment_path, "/env")) {
 #ifdef CONFIG_DEFAULT_ENVIRONMENT
-		printf("no valid environment found on %s. "
-			"Using default environment\n",
-			default_environment_path);
-		envfs_load("/dev/defaultenv", "/env");
+	envfs_load("/dev/defaultenv", "/default");
 #endif
+	if (envfs_load(default_environment_path, "/env")) {
+		printf("No valid local environment found on %s. "
+			"There will be no local customisations.\n",
+			default_environment_path);
 	}
 #endif
 #ifdef CONFIG_COMMAND_SUPPORT
-	printf("running /env/bin/init...\n");
+	printf("running /default/bin/init...\n");
 
-	if (!stat("/env/bin/init", &s)) {
-		run_command("source /env/bin/init", 0);
+	if (!stat("/default/bin/init", &s)) {
+		run_command("source /default/bin/init", 0);
 	} else {
 		printf("not found\n");
 	}

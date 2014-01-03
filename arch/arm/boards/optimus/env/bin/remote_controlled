@@ -1,9 +1,9 @@
 #!/bin/sh
 
-PATH=/env/bin
+PATH=/default/bin
 export PATH
 
-. /env/config
+. /default/config
 
 # Turn on red LED
 mw 0x90470000 0x0800e000

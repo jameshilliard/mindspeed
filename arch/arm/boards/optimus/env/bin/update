@@ -26,7 +26,7 @@ elif [ ${Option} = p ]; then
 		exit 1
 	fi
 else
-	. /env/bin/_update_help
+	. /default/bin/_update_help
 	exit 0
 fi
 done
@@ -34,7 +34,7 @@ done
 if [ x${install_kernel} != xyes ] && [ x${install_rootfs} != xyes ]; then
 	echo "Specify at least one of -k and -r"
 	echo ""
-	. /env/bin/_update_help
+	. /default/bin/_update_help
 	exit 0
 fi
 
