@@ -9,6 +9,10 @@ addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
 
 hnvram from /dev/nor0.hnvram
+[ $HNV_MAC_ADDR ] && eth0.ethaddr=$HNV_MAC_ADDR
+[ $HNV_MAC_ADDR_WAN ] && eth1.ethaddr=$HNV_MAC_ADDR_WAN
+[ $HNV_MAC_ADDR_MOCA ] && eth2.ethaddr=$HNV_MAC_ADDR_MOCA
+
 if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
   kernpart=kernel1
   rootpart=rootfs1
