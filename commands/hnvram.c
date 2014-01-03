@@ -46,9 +46,6 @@
 /* these keys are stored in binary format for historical reasons */
 const char *hnvram_binary_keys[] = {
 	"LOADER_VERSION",
-	"MAC_ADDR",
-	"MAC_ADDR_MOCA",
-	"MAC_ADDR_BT",
 	"GPN",
 	"HDCP_KEY",
 	"DTCP_KEY",
@@ -171,7 +168,7 @@ static void _parse_hnvram(const char *buf, int len) {
 		val = p;
 		p += vallen;
 		if (vallen == 6 && namelen >= 8 &&
-				strncmp("mac_addr", name, 8) == 0) {
+				strncmp("MAC_ADDR", name, 8) == 0) {
 			char *macstr = encode_mac(val);
 			_copy_setenv(name, namelen, macstr, strlen(macstr));
 			free(macstr);
