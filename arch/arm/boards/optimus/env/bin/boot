@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -f /env/bin/pre-boot ]; then
+	. /env/bin/pre-boot || exit
+fi
+
 . /default/config
 
 mtdparts="${nor_device}:${nor_parts};${nand_device}:${nand_parts}"
