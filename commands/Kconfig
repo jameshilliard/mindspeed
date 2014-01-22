@@ -347,6 +347,11 @@ config CMD_BOOTB
 	help
 	  compile in the 'bootb' command to start Barebox
 
+config CMD_OTP_KEY
+	tristate
+	depends on DRIVER_OTP
+	prompt "OTP writing commands"
+
 endmenu
 
 config CMD_TIMEOUT
