@@ -1,0 +1,5 @@
+# Generated file; shouldn't be commited in this directory.
+rsa_public_key.h
+
+# Executable
+generate_public_key_code
