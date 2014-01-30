@@ -25,6 +25,8 @@
  *  http://www.itl.nist.gov/fipspubs/fip180-1.htm
  */
 
+#include <sha1.h>
+
 #include <common.h>
 #include <digest.h>
 #include <init.h>
@@ -32,15 +34,6 @@
 #include <asm/byteorder.h>
 
 #define SHA1_SUM_POS	-0x20
-#define SHA1_SUM_LEN	20
-
-typedef struct
-{
-	uint32_t total[2];	/*!< number of bytes processed	*/
-	uint32_t state[5];	/*!< intermediate digest state	*/
-	uint8_t buffer[64];	/*!< data block being processed */
-}
-sha1_context;
 
 /*
  * 32-bit integer manipulation macros (big endian)
@@ -51,7 +44,7 @@ sha1_context;
 /*
  * SHA-1 context setup
  */
-static void sha1_starts (sha1_context * ctx)
+void sha1_starts (sha1_context * ctx)
 {
 	ctx->total[0] = 0;
 	ctx->total[1] = 0;
@@ -220,7 +213,7 @@ static void sha1_process (sha1_context * ctx, uint8_t data[64])
 /*
  * SHA-1 process buffer
  */
-static void sha1_update (sha1_context * ctx, uint8_t *input, uint32_t ilen)
+void sha1_update (sha1_context * ctx, uint8_t *input, uint32_t ilen)
 {
 	uint32_t fill, left;
 
@@ -265,7 +258,7 @@ static uint8_t sha1_padding[64] = {
 /*
  * SHA-1 final digest
  */
-static void sha1_finish (sha1_context * ctx, uint8_t output[20])
+void sha1_finish (sha1_context * ctx, uint8_t output[20])
 {
 	uint32_t last, padn;
 	uint32_t high, low;
@@ -291,92 +284,3 @@ static void sha1_finish (sha1_context * ctx, uint8_t output[20])
 	PUT_UINT32_BE (ctx->state[4], output, 16);
 }
 
-/*
- * Output = HMAC-SHA-1( input buffer, hmac key )
- */
-void sha1_hmac (uint8_t *key, uint32_t keylen,
-		uint8_t *input, uint32_t ilen, uint8_t output[20])
-{
-	uint32_t i;
-	sha1_context ctx;
-	uint8_t k_ipad[64];
-	uint8_t k_opad[64];
-	uint8_t tmpbuf[20];
-
-	memset (k_ipad, 0x36, 64);
-	memset (k_opad, 0x5C, 64);
-
-	for (i = 0; i < keylen; i++) {
-		if (i >= 64)
-			break;
-
-		k_ipad[i] ^= key[i];
-		k_opad[i] ^= key[i];
-	}
-
-	sha1_starts (&ctx);
-	sha1_update (&ctx, k_ipad, 64);
-	sha1_update (&ctx, input, ilen);
-	sha1_finish (&ctx, tmpbuf);
-
-	sha1_starts (&ctx);
-	sha1_update (&ctx, k_opad, 64);
-	sha1_update (&ctx, tmpbuf, 20);
-	sha1_finish (&ctx, output);
-
-	memset (k_ipad, 0, 64);
-	memset (k_opad, 0, 64);
-	memset (tmpbuf, 0, 20);
-	memset (&ctx, 0, sizeof (sha1_context));
-}
-
-struct sha1 {
-	sha1_context context;
-	struct digest d;
-};
-
-static int digest_sha1_init(struct digest *d)
-{
-	struct sha1 *m = container_of(d, struct sha1, d);
-
-	sha1_starts(&m->context);
-
-	return 0;
-}
-
-static int digest_sha1_update(struct digest *d, const void *data,
-			     unsigned long len)
-{
-	struct sha1 *m = container_of(d, struct sha1, d);
-
-	sha1_update(&m->context, (uint8_t*)data, len);
-
-	return 0;
-}
-
-static int digest_sha1_final(struct digest *d, unsigned char *md)
-{
-	struct sha1 *m = container_of(d, struct sha1, d);
-
-	sha1_finish(&m->context, md);
-
-	return 0;
-}
-
-static struct sha1 m = {
-	.d = {
-		.name = "sha1",
-		.init = digest_sha1_init,
-		.update = digest_sha1_update,
-		.final = digest_sha1_final,
-		.length = SHA1_SUM_LEN,
-	}
-};
-
-static int sha1_digest_register(void)
-{
-	digest_register(&m.d);
-
-	return 0;
-}
-device_initcall(sha1_digest_register);

@@ -50,6 +50,14 @@ config CMD_HNVRAM
 	depends on ENV_HANDLING
 	prompt "hnvram"
 
+config CMD_TEST_SIGNED_BAREBOX
+	tristate
+	select DIGEST
+	select SHA1
+	select AUTH
+	select RSA_VERIFY
+	prompt "test signed barebox"
+
 config CMD_READLINE
 	tristate
 	prompt "readline"

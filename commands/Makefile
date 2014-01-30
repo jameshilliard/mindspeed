@@ -38,6 +38,7 @@ obj-$(CONFIG_CMD_PRINTENV)	+= printenv.o
 obj-$(CONFIG_CMD_SAVEENV)	+= saveenv.o
 obj-$(CONFIG_CMD_LOADENV)	+= loadenv.o
 obj-$(CONFIG_CMD_HNVRAM)	+= hnvram.o
+obj-$(CONFIG_CMD_TEST_SIGNED_BAREBOX)	+= test_signed_barebox.o
 obj-$(CONFIG_CMD_NAND)		+= nand.o
 obj-$(CONFIG_CMD_NAND)		+= comcerto_nand.o
 obj-$(CONFIG_CMD_TRUE)		+= true.o

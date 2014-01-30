@@ -26,6 +26,16 @@ config SHA256
 
 endif
 
+menuconfig AUTH
+	bool "Authentication                "
+
+if AUTH
+
+config RSA_VERIFY
+	bool "RSA_VERIFY"
+
+endif
+
 config GENERIC_FIND_NEXT_BIT
 	def_bool n
 
