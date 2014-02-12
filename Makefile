@@ -446,7 +446,7 @@ endif
 # This allow a user to issue only 'make' to build a kernel
 # Defaults barebox but it is usually overridden in the arch makefile
 ifeq ($(CONFIG_COMCERTO_ULOADER)$(CONFIG_COMCERTO_NAND_ULOADER),y)
-all: barebox.bin uloader.bin
+all: barebox-unsigned.bin uloader.bin
 else
 all: barebox.bin
 endif
@@ -658,15 +658,27 @@ endef
 quiet_cmd_objcopy = OBJCOPY $@
       cmd_objcopy = $(OBJCOPY) $(OBJCOPYFLAGS) $(OBJCOPYFLAGS_$(@F)) $< $@
 
-OBJCOPYFLAGS_barebox.bin = -O binary
+OBJCOPYFLAGS_barebox-unsigned.bin = -O binary
 
-barebox.bin: barebox FORCE
+barebox.bin: barebox-unsigned.bin
+ifdef CONFIG_PROD
+	$(shell ../../vendor/google/platform/signing/mindspeed/sign_image.py \
+		 -i barebox-unsigned.bin -k gfiber_barebox_private.pem -o barebox.bin; \
+		 rm -f barebox-unsigned.bin)
+else
+	$(shell echo -ne "\x00\x00\x00\x00\x00\x00\x00\x00" > barebox.bin; \
+		 echo -ne "\x00\x00\x00\x00\x00\x00\x00\x00" >> barebox.bin; \
+		 cat barebox-unsigned.bin >> barebox.bin; rm -f barebox-unsigned.bin)
+endif
+
+barebox-unsigned.bin: barebox FORCE
 	$(call if_changed,objcopy)
 
 uloader.bin: uloader
 
-uloader: barebox.bin
-	$(shell cp barebox.bin ./tools/ImageGenarator/.; cd $(srctree)/tools/ImageGenarator/; \
+uloader: barebox-unsigned.bin
+	$(shell mv barebox-unsigned.bin ./tools/ImageGenarator/barebox.bin; \
+		 cd $(srctree)/tools/ImageGenarator/; \
 		 chmod 755 *.sh; ./uldr_gen.sh 1>/dev/null;)
 
 
@@ -1008,7 +1020,8 @@ endif # CONFIG_MODULES
 CLEAN_DIRS  += $(MODVERDIR)
 CLEAN_FILES +=	barebox System.map include/generated/barebox_default_env.h \
                 .tmp_version .tmp_barebox* barebox.bin barebox.S \
-		.tmp_kallsyms* barebox_default_env barebox.ldr Doxyfile.version
+		.tmp_kallsyms* barebox_default_env barebox.ldr Doxyfile.version \
+		barebox_unsigned.bin
 
 # Directories & files removed with 'make mrproper'
 MRPROPER_DIRS  += include/config include2 usr/include

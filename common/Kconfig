@@ -68,6 +68,13 @@ config BOARDINFO
 config ENVIRONMENT_VARIABLES
 	bool "environment variables support"
 
+config FORCE_BAREBOX_AUTH
+	depends on (COMCERTO_ULOADER || COMCERTO_NAND_ULOADER)
+	bool "Force RSA authentication of barebox binary"
+
+config PROD
+	bool "Production build (sign barebox)"
+
 menu "memory layout                 "
 
 config HAVE_MMU

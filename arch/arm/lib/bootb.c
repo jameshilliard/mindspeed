@@ -1,16 +1,22 @@
 #include <boot.h>
+#include <c2k_otp.h>
 #include <common.h>
 #include <command.h>
 #include <init.h>
 #include <clock.h>
 #include <config.h>
+#include <malloc.h>
+#include <sha1.h>
+#include <rsa_verify.h>
 #include <mach/comcerto-2000.h>
 #include <mach/gpio.h>
 #include <asm/io.h>
 
 #define ULOADER_PART_SIZE 0x20000 /* 128 KB */
 #define BAREBOX_PART_SIZE 0x80000
-#define BAREBOX_LODING_ADDR (COMCERTO_AXI_DDR_BASE + 0x1000000)
+#define BAREBOX_HEADER_SIZE 0x10	/* 16 bytes */
+#define BAREBOX_LODING_ADDR \
+	(COMCERTO_AXI_DDR_BASE + 0x1000000 - BAREBOX_HEADER_SIZE)
 
 #ifdef CONFIG_COMCERTO_NAND_ULOADER
 extern int read_nand(ulong src, ulong offset, ulong count);
@@ -58,7 +64,7 @@ static void bb_go(void *addr)
 {
 	int	(*func)(void);
 
-	printf("## Starting Barebox at 0x%p ...\n", addr);
+	printf("\n## Starting Barebox at 0x%p ...\n", addr);
 
 	console_flush();
 
@@ -109,6 +115,86 @@ static void copy_bb_from_spi_flash(char *dst, int count)
 }
 #endif
 
+#ifndef CONFIG_FORCE_BAREBOX_AUTH
+/*
+ * Determines whether or not the uLoader has been securely booted.
+ *
+ * If there is any doubt then we go with 'yes', since that restricts
+ * what harm we can do (e.g. can't boot unsigned or wrongly signed
+ * barebox).
+ */
+static bool is_secure_boot(void)
+{
+	bool is_secure;
+	u8 *config_byte;
+
+	config_byte = malloc(1);
+	if (config_byte == NULL) {
+		printf("Warning: config_byte malloc failed; assumed secure boot.\n");
+		return true;
+	}
+
+	if (otp_read(8, config_byte, 1) != 0) {
+		printf("Warning: otp_read failed; assuming secure boot.\n");
+		return true;
+	}
+
+	/* The auth bit is bit 1 of the config byte */
+	is_secure = *config_byte & 0x2;
+
+	free(config_byte);
+
+	return is_secure;
+}
+#endif
+
+/*
+ * Extracts an unsigned 4-byte little endian int from a byte pointer.
+ *
+ * It is the responsibility of the caller to move the pointer on after
+ * calling this method.
+ *
+ * Note that we use uint32_t with the assumption that this will always
+ * have a size of at least 4 bytes.
+ */
+static uint32_t _get_le_32_byte_int(uint8_t *ptr) {
+	uint32_t value = 0;
+
+	value |= *ptr++;
+	value |= *ptr++ << 8;
+	value |= *ptr++ << 16;
+	value |= *ptr++ << 24;
+
+	return value;
+}
+
+static int verify_image(u8 *image_ptr, u32 max_image_len) {
+	sha1_context ctx;
+	u8 *sig, hash[20];
+	u32 image_len, sig_offset;
+
+	image_len = _get_le_32_byte_int(image_ptr);
+	if (image_len > max_image_len) {
+		printf("ERROR: barebox image verification failed (bad header)\n");
+		return -1;
+	}
+	image_ptr += 4;
+
+	sig_offset = _get_le_32_byte_int(image_ptr);
+	image_ptr += 4;
+
+	image_ptr += 8;
+
+	sha1_starts(&ctx);
+	sha1_update(&ctx, image_ptr, image_len);
+	sha1_finish(&ctx, hash);
+
+	image_ptr += sig_offset;
+	sig = image_ptr;
+
+	return rsa_verify(sig, 256, hash);
+}
+
 static int do_bootb_barebox(void)
 {
 	volatile u32 *src = (u32 *)(COMCERTO_AXI_EXP_BASE + ULOADER_PART_SIZE); /* Start of NOR + uLdr size(128K) */
@@ -116,8 +202,15 @@ static int do_bootb_barebox(void)
 	int count = BAREBOX_PART_SIZE;
 	u32 bootopt;
 	int timeout = 1;
+	bool secure_boot;
 
-	if(bb_timeout(timeout))
+#ifdef CONFIG_FORCE_BAREBOX_AUTH
+	secure_boot = true;
+#else
+	secure_boot = is_secure_boot();
+#endif
+
+	if(!secure_boot && bb_timeout(timeout))
 		return 0;
 
 #ifdef CONFIG_COMCERTO_NAND_ULOADER
@@ -150,7 +243,20 @@ static int do_bootb_barebox(void)
 
 #endif
 
-	bb_go((void*)BAREBOX_LODING_ADDR);
+	if (secure_boot) {
+		printf("\nSecure boot detected; verifying Barebox image\n");
+
+		if (verify_image((u8 *) BAREBOX_LODING_ADDR, BAREBOX_PART_SIZE) == 0) {
+			printf("Barebox image verified!\n");
+		} else {
+			printf("ERROR: Barebox image verification failed!\n");
+			return -1;
+		}
+	} else {
+		printf("Secure boot not enabled; skipping barebox verification.\n");
+	}
+
+	bb_go((void*)(BAREBOX_LODING_ADDR + BAREBOX_HEADER_SIZE));
 
 	return -1;
 }
