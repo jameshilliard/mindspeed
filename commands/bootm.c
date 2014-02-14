@@ -43,6 +43,9 @@
 #include <rtc.h>
 #include <init.h>
 #include <asm-generic/memory_layout.h>
+#include <rsa_verify.h>
+#include <sha1.h>
+#include <secure_boot.h>
 
 #ifdef CONFIG_NAND_COMCERTO_ECC_HW_BCH
 extern uint32_t temp_nand_ecc_errors[];
@@ -149,12 +152,65 @@ int relocate_image(struct image_handle *handle, void *load_address)
 }
 EXPORT_SYMBOL(relocate_image);
 
-struct image_handle *map_image(const char *filename, int verify)
+/*
+ * Checks whether the kernel image is in legacy or current format.
+ *
+ * It is technically possible for an attacker to wait for this method
+ * to be called, then to swap out the kernel image. However, that doesn't
+ * gain them anything, except (probably) a failed boot.
+ *
+ * Returns 0 on success, non-zero on failure. The is_legacy parameter is set
+ * to indicate whether or not the kernel image is a legacy one. (1: is legacy,
+ * 0: is non-legacy).
+ */
+static int _check_if_legacy_kernel_image(const char *filename, int *is_legacy)
+{
+	int fd, rv = 0;
+	uint8_t sb_header[SB_HEADER_LEN];
+
+	*is_legacy = 0;
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		return -1;
+	}
+
+	if (read(fd, sb_header, SB_HEADER_LEN) != SB_HEADER_LEN) {
+		rv = -1;
+		goto end;
+	}
+
+	/*
+	 * Unfortunately, I can only think of one check we can do to try and detect
+	 * legacy kernel images, based on the header of the non-legacy format:
+	 *
+	 *   1. The header has 8 bytes of 0 padding at the end.
+	 */
+
+	if (_get_le_uint32(&sb_header[8]) != 0 ||
+			_get_le_uint32(&sb_header[12]) != 0) {
+		*is_legacy = 1;
+	}
+
+end:
+	close(fd);
+
+	return rv;
+}
+
+struct image_handle *map_image(const char *filename, int verify,
+		int legacy_format, int secure_boot)
 {
 	int fd;
 	uint32_t checksum, len;
 	struct image_handle *handle;
 	image_header_t *header;
+
+	/* Used for secure boot. */
+	sha1_context ctx;
+	uint32_t total_image_len, sig_offset, verity_table_len;
+	uint8_t sb_header[SB_HEADER_LEN], verity_info[SB_INFO_LEN], *verity_table;
+	uint8_t hash[SHA1_SUM_LEN], sig[SB_SIG_LEN];
 
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
@@ -164,14 +220,52 @@ struct image_handle *map_image(const char *filename, int verify)
 
 	handle = xzalloc(sizeof(struct image_handle) * 2);
 	header = &handle->header;
+	verity_table = NULL;
+
+	if (legacy_format && secure_boot) {
+		printf("Error: Cannot perform a secure boot of a legacy kernel image!\n");
+		goto err_out;
+	}
+
+	if (!legacy_format) {
+		if (secure_boot) {
+			puts ("   Authenticating Image ... ");
+
+			/*
+			 * As the OS data is read in a piece at a time, into various structs, we
+			 * construct the SHA data along the way and then verify it at the end.
+			 */
+			sha1_starts(&ctx);
+		}
+
+		if (read(fd, sb_header, SB_HEADER_LEN) != SB_HEADER_LEN) {
+			printf("Could not read signature header!\n");
+			goto err_out;
+		}
+
+		/* The verity header is currently unused, but is included in the hash. */
+		if (read(fd, verity_info, SB_INFO_LEN) != SB_INFO_LEN) {
+			printf("Could not read verity info!\n");
+			goto err_out;
+		}
+
+		if (secure_boot) {
+			sha1_update(&ctx, verity_info, SB_INFO_LEN);
+		}
+	}
 
 	if (read(fd, header, image_get_header_size()) < 0) {
 		printf("could not read: %s\n", errno_str());
 		goto err_out;
 	}
 
+	if (secure_boot) {
+		/* Do the SHA update before the CRC check, as CRC mutates the header. */
+		sha1_update(&ctx, (uchar *) header, image_get_header_size());
+	}
+
 	if (image_get_magic(header) != IH_MAGIC) {
-		puts ("Bad Magic Number\n");
+		puts ("\nBad OS Header Magic Number\n");
 		goto err_out;
 	}
 
@@ -179,10 +273,17 @@ struct image_handle *map_image(const char *filename, int verify)
 	header->ih_hcrc = 0;
 
 	if (crc32 (0, (uchar *)header, image_get_header_size()) != checksum) {
-		puts ("Bad Header Checksum\n");
+		puts ("\nBad OS Header Checksum\n");
 		goto err_out;
 	}
 	len  = image_get_size(header);
+
+	if (!legacy_format) {
+		/* In the non-legacy format, OS image (incl header) is 4096-byte padded. */
+		len += image_get_header_size();
+		len = ((len + 4095) / 4096) * 4096;
+		len -= image_get_header_size();
+	}
 
 	handle->data = memmap(fd, PROT_READ);
 	if (handle->data == (void *)-1) {
@@ -194,7 +295,50 @@ struct image_handle *map_image(const char *filename, int verify)
 		}
 	} else {
 		handle->data = (void *)((unsigned long)handle->data +
+						       SB_HEADER_LEN +
+						       SB_INFO_LEN +
 						       image_get_header_size());
+	}
+
+	if (!legacy_format) {
+		/* The final piece of data to be read is the verity table. */
+		total_image_len = _get_le_uint32(&sb_header[0]);
+		verity_table_len = total_image_len - SB_INFO_LEN -
+				image_get_header_size() - len;
+		verity_table = xmalloc(verity_table_len);
+
+		if (read(fd, verity_table, verity_table_len) != verity_table_len) {
+			printf("\nCould not read verity table!\n");
+			goto err_out;
+		}
+
+		if (secure_boot) {
+			/* Finish off the SHA-1 hash. */
+			sha1_update(&ctx, handle->data, len);
+			sha1_update(&ctx, verity_table, verity_table_len);
+			sha1_finish(&ctx, hash);
+
+			/* The signature can be found via an offset relative to the SB header end. */
+			sig_offset = _get_le_uint32(&sb_header[4]);
+			lseek(fd, SB_HEADER_LEN + sig_offset, SEEK_SET);
+			if (read(fd, sig, SB_SIG_LEN) != SB_SIG_LEN) {
+				printf("\nCould not read signature!\n");
+				goto err_out;
+			}
+
+			if (rsa_verify(sig, SB_SIG_LEN, hash) != 0) {
+				printf("Authentication failed!\n");
+				goto err_out;
+			}
+
+			puts ("OK\n");
+		}
+
+		/*
+		 * Slightly awkwardly, the OS CRC verification requires the original OS
+		 * length, not the padded version length, so we have to restore it first.
+		 */
+		len = image_get_size(header);
 	}
 
 	if (verify) {
@@ -335,6 +479,8 @@ err_out:
 	if (handle->flags & IH_MALLOC)
 		free(handle->data);
 	free(handle);
+	if (verity_table)
+		free(verity_table);
 	return NULL;
 }
 EXPORT_SYMBOL(map_image);
@@ -366,7 +512,7 @@ static int initrd_handler_parse_options(struct image_data *data, int opt,
 	switch(opt) {
 	case 'r':
 		printf("use initrd %s\n", optarg);
-		data->initrd = map_image(optarg, data->verify);
+		data->initrd = map_image(optarg, data->verify, 1, 0);
 		if (!data->initrd)
 			return -1;
 		return 0;
@@ -410,12 +556,15 @@ static int handler_parse_options(struct image_data *data, int opt, char *optarg)
 static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 {
 	ulong	iflag;
-	int	opt;
+	int	opt, secure_boot, legacy_format;
 	image_header_t *os_header;
-	struct image_handle *os_handle, *initrd_handle = NULL;
+	struct image_handle *os_handle = NULL, *initrd_handle = NULL;
 	struct image_handler *handler;
 	struct image_data data;
 	char options[53]; /* worst case: whole alphabet with colons */
+#ifndef CONFIG_FORCE_KERNEL_AUTH
+	secure_boot_mode_t boot_mode;
+#endif
 
 	memset(&data, 0, sizeof(struct image_data));
 	data.verify = 1;
@@ -452,7 +601,23 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 	if (optind == argc)
 		return COMMAND_ERROR_USAGE;
 
-	os_handle = map_image(argv[optind], data.verify);
+#ifdef CONFIG_FORCE_KERNEL_AUTH
+	secure_boot = 1;
+#else
+	boot_mode = get_secure_boot_mode();
+	if (boot_mode == UNKNOWN) {
+		printf("Error: Unable to determine secure boot status!\n");
+		return 1;
+	}
+	secure_boot = (boot_mode == SECURE);
+#endif
+
+	if (_check_if_legacy_kernel_image(argv[optind], &legacy_format)) {
+		printf("Error: Unable to determine whether kernel is legacy/non-legacy!\n");
+		return 1;
+	}
+
+	os_handle = map_image(argv[optind], data.verify, legacy_format, secure_boot);
 	if (!os_handle)
 		return 1;
 	data.os = os_handle;

@@ -38,3 +38,4 @@ obj-$(CONFIG_MD5)	+= md5.o
 obj-$(CONFIG_SHA1)	+= sha1.o
 obj-$(CONFIG_SHA256)	+= sha256.o
 obj-y			+= rsa/
+obj-y			+= secure_boot.o

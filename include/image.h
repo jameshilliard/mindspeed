@@ -335,7 +335,8 @@ void	print_image_hdr (image_header_t *hdr);
  * Load an image into memory. Returns a pointer to the loaded
  * image.
  */
-struct image_handle *map_image(const char *filename, int verify);
+struct image_handle *map_image(const char *filename, int verify,
+		int legacy_format, int secure_boot);
 void unmap_image(struct image_handle *handle);
 
 /*

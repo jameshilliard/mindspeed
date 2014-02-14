@@ -6,6 +6,7 @@
 #include <clock.h>
 #include <config.h>
 #include <malloc.h>
+#include <secure_boot.h>
 #include <sha1.h>
 #include <rsa_verify.h>
 #include <mach/comcerto-2000.h>
@@ -115,72 +116,19 @@ static void copy_bb_from_spi_flash(char *dst, int count)
 }
 #endif
 
-#ifndef CONFIG_FORCE_BAREBOX_AUTH
-/*
- * Determines whether or not the uLoader has been securely booted.
- *
- * If there is any doubt then we go with 'yes', since that restricts
- * what harm we can do (e.g. can't boot unsigned or wrongly signed
- * barebox).
- */
-static bool is_secure_boot(void)
-{
-	bool is_secure;
-	u8 *config_byte;
-
-	config_byte = malloc(1);
-	if (config_byte == NULL) {
-		printf("Warning: config_byte malloc failed; assumed secure boot.\n");
-		return true;
-	}
-
-	if (otp_read(8, config_byte, 1) != 0) {
-		printf("Warning: otp_read failed; assuming secure boot.\n");
-		return true;
-	}
-
-	/* The auth bit is bit 1 of the config byte */
-	is_secure = *config_byte & 0x2;
-
-	free(config_byte);
-
-	return is_secure;
-}
-#endif
-
-/*
- * Extracts an unsigned 4-byte little endian int from a byte pointer.
- *
- * It is the responsibility of the caller to move the pointer on after
- * calling this method.
- *
- * Note that we use uint32_t with the assumption that this will always
- * have a size of at least 4 bytes.
- */
-static uint32_t _get_le_32_byte_int(uint8_t *ptr) {
-	uint32_t value = 0;
-
-	value |= *ptr++;
-	value |= *ptr++ << 8;
-	value |= *ptr++ << 16;
-	value |= *ptr++ << 24;
-
-	return value;
-}
-
 static int verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;
 	u8 *sig, hash[20];
 	u32 image_len, sig_offset;
 
-	image_len = _get_le_32_byte_int(image_ptr);
+	image_len = _get_le_uint32(image_ptr);
 	if (image_len > max_image_len) {
 		printf("ERROR: barebox image verification failed (bad header)\n");
 		return -1;
 	}
 	image_ptr += 4;
 
-	sig_offset = _get_le_32_byte_int(image_ptr);
+	sig_offset = _get_le_uint32(image_ptr);
 	image_ptr += 4;
 
 	image_ptr += 8;
@@ -202,12 +150,17 @@ static int do_bootb_barebox(void)
 	int count = BAREBOX_PART_SIZE;
 	u32 bootopt;
 	int timeout = 1;
-	bool secure_boot;
-
 #ifdef CONFIG_FORCE_BAREBOX_AUTH
-	secure_boot = true;
+	bool secure_boot = true;
 #else
-	secure_boot = is_secure_boot();
+	bool secure_boot;
+	secure_boot_mode_t boot_mode = get_secure_boot_mode();
+
+	if (boot_mode == UNKNOWN) {
+		printf("Error: Unable to determine secure boot mode.\n");
+		return -1;
+	}
+	secure_boot = (boot_mode == SECURE);
 #endif
 
 	if(!secure_boot && bb_timeout(timeout))
