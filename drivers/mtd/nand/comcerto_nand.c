@@ -22,6 +22,7 @@
 #include <linux/mtd/nand.h>
 #include <asm/hardware.h>
 #include <asm/io.h>
+#include <asm/unaligned.h>
 #include <clock.h>
 
 #include <mach/gpio.h>
@@ -459,6 +460,7 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 	err_corr_data = 0x0;
 
 	while (((err_corr_data >> 16) !=  0x87FE)) {
+		uint16_t *p;
 		err_corr_data = readl(ECC_CORR_DATA_STAT);
 		if ((err_corr_data >> 16) ==  0x87FE)
 			break;
@@ -468,7 +470,8 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 		err_corr_data_prev = err_corr_data;
 		index = (err_corr_data >> 16) & 0x7FF;
 		mask = err_corr_data & 0xFFFF;
-		*((uint16_t *)(dat + (index * 2))) ^= mask;
+		p = (uint16_t *) (dat + (index * 2));
+		put_unaligned(get_unaligned(p) ^ mask, p);
 		while (mask) {
 			if (mask & 1)
 				err_count++;
