@@ -307,6 +307,13 @@ static int c2000_device_init(void)
 	comcerto_gpio_set_0(GPIO_14|GPIO_15);
 	comcerto_gpio_set_1(GPIO_14|GPIO_15);
 
+	/* Misc Pin Select Register[5:4]: TDM interface Muxing
+	 * ‘00’ – TDM block is selected (default)
+	 * ‘10’ – GPIO[63:60] signals are selected
+	 *
+	 * For Optimus, we need GPIO[62].
+	 */
+	writel(readl(COMCERTO_GPIO_MISC_PIN_SELECT_REG) | 2 << 4, COMCERTO_GPIO_MISC_PIN_SELECT_REG);
 
 	/* GPIO[44] and CORESIGHT_D[0] are muxed on the same pin. Set pin
 	 * Select Register to select GPIO[44].  Pin Output Register is 0 by
