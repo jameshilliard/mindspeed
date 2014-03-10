@@ -562,7 +562,7 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 	struct image_handler *handler;
 	struct image_data data;
 	char options[53]; /* worst case: whole alphabet with colons */
-#ifndef CONFIG_FORCE_KERNEL_AUTH
+#if !(defined(CONFIG_FORCE_KERNEL_AUTH) || defined(CONFIG_DEVELOPER_BAREBOX))
 	secure_boot_mode_t boot_mode;
 #endif
 
@@ -602,7 +602,11 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 		return COMMAND_ERROR_USAGE;
 
 #ifdef CONFIG_FORCE_KERNEL_AUTH
+	printf("Secure boot forced; will authenticate kernel.\n");
 	secure_boot = 1;
+#elif defined(CONFIG_DEVELOPER_BAREBOX)
+	printf("Developer barebox detected; will not authenticate kernel.\n");
+	secure_boot = 0;
 #else
 	boot_mode = get_secure_boot_mode();
 	if (boot_mode == UNKNOWN) {
