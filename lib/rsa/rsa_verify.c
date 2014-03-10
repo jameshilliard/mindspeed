@@ -41,7 +41,6 @@
  * and R^2, where R is 2^(# key bits).
  */
 struct rsa_public_key {
-	uint len;	/* Length of modulus[] in number of uint32_t */
 	uint32_t n0inv;	/* -1 / modulus[0] mod 2^32 */
 	uint32_t *modulus;	/* modulus as little endian array */
 	uint32_t *rr;	/* R^2 as little endian array */
@@ -99,7 +98,7 @@ static void subtract_modulus(const struct rsa_public_key *key, uint32_t num[])
 	int64_t acc = 0;
 	uint i;
 
-	for (i = 0; i < key->len; i++) {
+	for (i = 0; i < KEY_LEN_WORDS; i++) {
 		acc += (uint64_t)num[i] - key->modulus[i];
 		num[i] = (uint32_t)acc;
 		acc >>= 32;
@@ -118,7 +117,7 @@ static int greater_equal_modulus(const struct rsa_public_key *key,
 {
 	uint32_t i;
 
-	for (i = key->len - 1; i >= 0; i--) {
+	for (i = KEY_LEN_WORDS - 1; i >= 0; i--) {
 		if (num[i] < key->modulus[i])
 			return 0;
 		if (num[i] > key->modulus[i])
@@ -148,7 +147,7 @@ static void montgomery_mul_add_step(const struct rsa_public_key *key,
 	acc_a = (uint64_t)a * b[0] + result[0];
 	d0 = (uint32_t)acc_a * key->n0inv;
 	acc_b = (uint64_t)d0 * key->modulus[0] + (uint32_t)acc_a;
-	for (i = 1; i < key->len; i++) {
+	for (i = 1; i < KEY_LEN_WORDS; i++) {
 		acc_a = (acc_a >> 32) + (uint64_t)a * b[i] + result[i];
 		acc_b = (acc_b >> 32) + (uint64_t)d0 * key->modulus[i] +
 				(uint32_t)acc_a;
@@ -178,9 +177,9 @@ static void montgomery_mul(const struct rsa_public_key *key,
 {
 	uint i;
 
-	for (i = 0; i < key->len; ++i)
+	for (i = 0; i < KEY_LEN_WORDS; ++i)
 		result[i] = 0;
-	for (i = 0; i < key->len; ++i)
+	for (i = 0; i < KEY_LEN_WORDS; ++i)
 		montgomery_mul_add_step(key, result, a[i], b);
 }
 
@@ -195,11 +194,11 @@ static int pow_mod(const struct rsa_public_key *key, uint32_t *inout)
 	uint32_t *result, *ptr;
 	uint i;
 
-	uint32_t val[key->len], acc[key->len], tmp[key->len];
+	uint32_t val[KEY_LEN_WORDS], acc[KEY_LEN_WORDS], tmp[KEY_LEN_WORDS];
 	result = tmp;	/* Re-use location. */
 
 	/* Convert from big endian byte array to little endian word array. */
-	for (i = 0, ptr = inout + key->len - 1; i < key->len; i++, ptr--)
+	for (i = 0, ptr = inout + KEY_LEN_WORDS - 1; i < KEY_LEN_WORDS; i++, ptr--)
 		val[i] = get_unaligned_be32(ptr);
 
 	montgomery_mul(key, acc, val, key->rr);	/* axx = a * RR / R mod M */
@@ -214,7 +213,7 @@ static int pow_mod(const struct rsa_public_key *key, uint32_t *inout)
 		subtract_modulus(key, result);
 
 	/* Convert to bigendian byte array */
-	for (i = key->len - 1, ptr = inout; (int)i >= 0; i--, ptr++)
+	for (i = KEY_LEN_WORDS - 1, ptr = inout; (int)i >= 0; i--, ptr++)
 		put_unaligned_be32(result[i], ptr);
 
 	return 0;
@@ -226,38 +225,47 @@ int rsa_verify(uint8_t *sig, uint32_t sig_len, uint8_t *hash)
 	const uint8_t *padding;
 	int ret, pad_len;
 
-	uint32_t buf[sig_len / sizeof(uint32_t)];
+	uint32_t *buf;
+	buf = malloc(sig_len);
+
+	if (!buf) {
+		printf("!buf\n");
+		return -EIO;
+	}
 
 	/* Set up the public key with the information from the header. */
-	key.len = len / (sizeof(uint32_t) * 8);
 	key.n0inv = n0inv;
 	key.modulus = modulus;
 	key.rr = rr;
 
 	if (!sig || !hash) {
 		printf("!sig || !hash\n");
-		return -EIO;
+		ret = -EIO;
+		goto end;
 	}
 
-	if (sig_len != (key.len * sizeof(uint32_t))) {
+	if (sig_len != (KEY_LEN_WORDS * sizeof(uint32_t))) {
 		printf("Signature is of incorrect length %d\n", sig_len);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto end;
 	}
 
 	/* Sanity check for stack size */
 	if (sig_len > RSA_MAX_SIG_BITS / 8) {
 		printf("Signature length %u exceeds maximum %d\n", sig_len,
 				RSA_MAX_SIG_BITS / 8);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto end;
 	}
 
 	memcpy(buf, sig, sig_len);
 
-	/* Sanity check for stack size - key.len is in 32-bit words */
-	if (key.len > RSA_MAX_KEY_BITS / 32) {
-		printf("RSA key words %u exceeds maximum %d\n", key.len,
+	/* Sanity check for stack size - KEY_LEN_WORDS is in 32-bit words */
+	if (KEY_LEN_WORDS > RSA_MAX_KEY_BITS / 32) {
+		printf("RSA key words %u exceeds maximum %d\n", KEY_LEN_WORDS,
 				RSA_MAX_KEY_BITS / 32);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto end;
 	}
 
 	ret = pow_mod(&key, buf);
@@ -268,14 +276,18 @@ int rsa_verify(uint8_t *sig, uint32_t sig_len, uint8_t *hash)
 
 	/* Check pkcs1.5 padding bytes. */
 	if (memcmp(buf, padding, pad_len)) {
-		return -EINVAL;
+		ret = -EINVAL;
+		goto end;
 	}
 
 	/* Check hash. */
 	if (memcmp((uint8_t *)buf + pad_len, hash, sig_len - pad_len)) {
-		return -EACCES;
+		ret = -EACCES;
+		goto end;
 	}
 
-	return 0;
+end:
+	free(buf);
+	return ret;
 }
 

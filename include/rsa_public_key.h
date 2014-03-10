@@ -9,7 +9,8 @@
 
 #include <common.h>
 
-uint len = 0u;
+#define KEY_LEN_WORDS 0
+
 uint32_t n0inv = 0u;
 uint32_t modulus[] = {
 };

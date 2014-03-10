@@ -64,7 +64,7 @@ static int _generate_verify_data_code(uint32_t *modulus, uint32_t *rr,
 		uint32_t n0inv, unsigned int len) {
 	int num_elements, i, num_chars;
 	FILE *header_file;
-	int ret = 0;
+	int ret = 0, len_in_words;
 
 	header_file = fopen(header_name, "w");
 	if (!header_file) {
@@ -78,7 +78,10 @@ static int _generate_verify_data_code(uint32_t *modulus, uint32_t *rr,
 		goto end;
 	}
 
-	if (fprintf(header_file, "uint len = %uu;\n", len) <= 0) {
+	/* The verification code requires the key length in 32-bit words. */
+	len_in_words = len / 32;
+
+	if (fprintf(header_file, "#define KEY_LEN_WORDS %u\n\n", len_in_words) <= 0) {
 		fprintf(stderr, "Unable to write len to header file.\n");
 		ret = 1;
 		goto end;
