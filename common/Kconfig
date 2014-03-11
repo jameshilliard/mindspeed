@@ -76,6 +76,14 @@ config FORCE_KERNEL_AUTH
 	depends on COMCERTO_BOOTLOADER
 	bool "Force RSA authentication of kernel image"
 
+config DEVELOPER_BAREBOX
+	depends on COMCERTO_BOOTLOADER
+	bool "Enable developer barebox build"
+	help
+		A developer barebox build skips most of the production setup;
+		most notably, it will not verify the kernel before booting,
+		unless FORCE_KERNEL_AUTH is also set.
+
 config PROD
 	bool "Production build (sign barebox)"
 
