@@ -5,24 +5,22 @@
 #include <mach/clkcore.h>
 #include <mach/ddr.h>
 
-
-struct ddr_reg_val evm_ddrc_cfg[] = {DDRC_CFG};
-struct ddr_reg_val evm_ddr_phy_cfg[] = {DDR_PHY_CFG};
-
 void SoC_DDR_init(void)
 {
 	int i;
-	int reg_count;
-	int reg_phy_count;
         volatile u32 delay_count;
+	struct ddr_config dc;
+
+	dc = get_ddr_config();
+
+	/* If we did not get a proper DDRC configuration, return. */
+	if (!dc.ddr_phy_cfg) return;
 
 	writel(0x1, DDR_RESET); /* DDR controller out of reset and PHY is put into reset */
 
-	reg_phy_count = sizeof(evm_ddr_phy_cfg)/sizeof(struct ddr_reg_val);
-
-	for(i = 0 ; i < reg_phy_count; i++)
+	for(i = 0; dc.ddr_phy_cfg[i].reg; i++)
 	{
-		writel(evm_ddr_phy_cfg[i].val, evm_ddr_phy_cfg[i].reg);
+		writel(dc.ddr_phy_cfg[i].val, dc.ddr_phy_cfg[i].reg);
 
 		//wait for few us. VLSI has 5 NOPs here.
 		delay_count = 0x1;
@@ -31,11 +29,9 @@ void SoC_DDR_init(void)
 
 	writel(0, DDR_RESET); /* DDR PHY out of reset */
 
-	reg_count = sizeof(evm_ddrc_cfg)/sizeof(struct ddr_reg_val);
-
-	for(i = 0 ; i < reg_count; i++)
+	for(i = 0; dc.ddrc_cfg[i].reg; i++)
 	{
-		writel(evm_ddrc_cfg[i].val, evm_ddrc_cfg[i].reg);
+		writel(dc.ddrc_cfg[i].val, dc.ddrc_cfg[i].reg);
 	}
 
 	/* start the DDR Memory Controller */
@@ -45,5 +41,3 @@ void SoC_DDR_init(void)
 	while (!(readl(DDRC_CTL_51_REG) & MC_INIT_STAT_MASK))
 		;
 }
-
-

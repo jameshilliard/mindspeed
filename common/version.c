@@ -1,4 +1,5 @@
 #include <common.h>
+#include <mach/ddr.h>
 #include <reloc.h>
 #include <generated/utsrelease.h>
 
@@ -10,9 +11,14 @@ const char version_string[] =
 	"uloader " UTS_RELEASE " (" __DATE__ " - " __TIME__ ")";
 #endif
 
+#ifdef CONFIG_HAS_EARLY_INIT
+#error We do not support CONFIG_HAS_EARLY_INIT
+#endif
+
 void barebox_banner (void)
 {
-	printf (RELOC("\n\n%s\n\n"), RELOC_VAR(version_string));
-	printf(RELOC("Board: " CONFIG_BOARDINFO "\n"));
+	printf("\n\n%s\n\n", version_string);
+	printf("SoC: " CONFIG_BOARDINFO "\n");
+	printf("Board: %s\n", get_ddr_config_description());
 }
 

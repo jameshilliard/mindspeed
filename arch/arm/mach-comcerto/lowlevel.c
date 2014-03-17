@@ -23,7 +23,7 @@ void ddr_ecc_init(void)
         int i;
         int length = TRANSFER_LEN;
 
-        for(incr = 0 ; incr < DDR_SIZE; )
+        for(incr = 0 ; incr < get_ddr_config_size(); )
         {
                 mdma_transfer_single(COMCERTO_AXI_IRAM_BASE, COMCERTO_AXI_DDR_BASE + incr, length);
                 incr += TRANSFER_LEN/4;

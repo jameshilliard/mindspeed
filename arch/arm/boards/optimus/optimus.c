@@ -153,7 +153,8 @@ static struct device_d sdram_dev = {
 	.id = -1,
 	.name = "mem",
 	.map_base = 0x00000000,
-	.size = SZ_1G,
+	.size = 0, /* Will be set in c2000_device_init() depending on h/w
+		      strapping. */
 	.platform_data = &sdram_pdata,
 };
 
@@ -330,9 +331,15 @@ static int c2000_device_init(void)
 	comcerto_gpio_set_0(GPIO_12);
 #endif
 
+	sdram_dev.size = get_ddr_config_size();
+	if (!sdram_dev.size) {
+		printf("Bad DDRC configuration\n");
+		hang();
+	}
 	//For 16bit ddr, reduce the size to half 
 	if (is_16bitDDR_config())
 		sdram_dev.size >>= 1;
+	printf("Memory size: %s\n", size_human_readable(sdram_dev.size));
 
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	armlinux_add_dram(&sdram_dev);

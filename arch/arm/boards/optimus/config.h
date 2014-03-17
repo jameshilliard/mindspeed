@@ -3,8 +3,6 @@
 
 #define CONFIG_LBA48
 
-#define DDR_SIZE        SZ_1G
-
 #define CFG_I2C_EEPROM0_ADDR     0x50
 #define I2C_EEPROM_PAGE_SZ	128
 #define I2C_EEPROM_SIZE		I2C_EEPROM_AT24C512B_SZ
