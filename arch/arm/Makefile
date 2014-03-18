@@ -122,7 +122,7 @@ endif
 
 TEXT_BASE = $(CONFIG_TEXT_BASE)
 
-CPPFLAGS += -DTEXT_BASE=$(TEXT_BASE) -P
+CPPFLAGS += -DTEXT_BASE=$(TEXT_BASE) -Wp,-P
 
 ifndef CONFIG_MODULES
 # Add cleanup flags
