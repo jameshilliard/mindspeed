@@ -34,6 +34,11 @@ if [ $? = 0 ]; then
 	if frbutton; then
 		remote_controlled
 	else
+		# fan: 18 kHz 50%, 50% spinup (quiet)
+		i2c_write -v -a 0x04c -r 0x4b 0f
+		i2c_write -v -a 0x04c -r 0x4d 0a
+		i2c_write -v -a 0x04c -r 0x4c 0a
+
 		boot
 
 		# If we reach here, the kernel has failed to boot. Try the other kernel.
