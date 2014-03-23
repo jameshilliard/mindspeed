@@ -50,7 +50,7 @@ config NAND_ECC_HW_NONE
 
 config NAND_COMCERTO_ECC_8_HW_BCH
 	bool
-	depends on NAND_COMCERTO
+	depends on NAND_COMCERTO && !(NAND_COMCERTO_ECC_24_HW_BCH)
 	default n
 	prompt "Comcerto ECC-8 syndrome calculation using BCH"
 

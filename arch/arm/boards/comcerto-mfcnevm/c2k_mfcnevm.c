@@ -49,6 +49,7 @@
 #include <mach/i2c.h>
 #include <mach/otp.h>
 #include <mach/ddr.h>
+#include <mach/reset.h>
 
 #define PHY_DEVICE      "phy0"
 
@@ -207,6 +208,111 @@ struct device_d csi_flash_dev = {
 	.size     = SPI_FLASH_SIZE,
 };
 
+void GPIO_reset_external_device(int block,int state)
+{
+	/* Blocks to be put in out of Reset and reset mode 
+	 * 0 ----> out of reset 
+	 * 1 ----> reset 
+	*/
+	switch (block){
+		case COMPONENT_ATHEROS_SWITCH:
+			if (state){
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) & ~GPIO_5, COMCERTO_GPIO_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_OE_REG) & ~GPIO_5, COMCERTO_GPIO_OE_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) & ~GPIO_5, COMCERTO_GPIO_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_OE_REG) | GPIO_5, COMCERTO_GPIO_OE_REG);
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) |GPIO_5, COMCERTO_GPIO_OUTPUT_REG);
+			}
+			break;
+		case COMPONENT_SLIC:
+			if (state){
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) & ~GPIO_4, COMCERTO_GPIO_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_OE_REG) & ~GPIO_4, COMCERTO_GPIO_OE_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) & ~GPIO_4, COMCERTO_GPIO_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_OE_REG) | GPIO_4, COMCERTO_GPIO_OE_REG);
+				writel(readl(COMCERTO_GPIO_OUTPUT_REG) | GPIO_4, COMCERTO_GPIO_OUTPUT_REG);
+			}
+			break;
+		case COMPONENT_PCIE0:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_48, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_48, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) & ~GPIO_48, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_48, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_48, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_48, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_48, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		case COMPONENT_PCIE1:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_47, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_47, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) & ~GPIO_47, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_47, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_47, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_47, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_47, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		case COMPONENT_USB_HUB:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_50, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_50, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) & ~GPIO_50, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_50, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_50, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_50, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_50, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		case COMPONENT_EXP_DAUGTHER_CARD:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_49, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_49, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) & ~GPIO_49, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_49, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_49, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_49, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_49, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		case COMPONENT_RGMII0:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_46, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_46, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) & ~GPIO_46, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_46, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_46, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_46, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_46, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		case COMPONENT_RGMII1:
+			if (state){
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_45, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) | GPIO_45, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG)& ~GPIO_45, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}else{
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) & ~GPIO_45, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel( readl(COMCERTO_GPIO_EXT_OE_REG) & ~GPIO_45, COMCERTO_GPIO_EXT_OE_REG);
+				writel(readl(COMCERTO_GPIO_EXT_OUTPUT_REG) | GPIO_45, COMCERTO_GPIO_EXT_OUTPUT_REG);
+				writel(readl(COMCERTO_GPIO_EXT_PIN_SELECT_REG) | GPIO_45, COMCERTO_GPIO_EXT_PIN_SELECT_REG);
+			}
+			break;
+		default:
+			break;
+	}
+}
+		
+
 static int c2000_device_init(void)
 {
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
@@ -270,13 +376,6 @@ static int c2000_device_init(void)
 	writel(0x03034007, EXP_CS0_TMG1_REG);
 	writel(0x04040502, EXP_CS0_TMG2_REG);
 
-#ifdef CONFIG_COMCERTO_NAND
-#ifdef CONFIG_COMCERTO_BOOTLOADER
-	//CS4 EXP bus Timing tune.
-	writel(0x00000001, EXP_CS4_TMG1_REG);
-	writel(0x01010001, EXP_CS4_TMG2_REG);
-#endif
-#endif
 	/* External reset to PCIe devices, Atheros Switch and FXS block, GPIO27 is used for TM_EXT_RESET*/
 	/*It seems some pcie wifi card has problem with the way external reset was being
 	  done (reset line high/delay/low/delay/high sequence) earlier. Instead simple
@@ -333,7 +432,6 @@ int c2000_eth_board_init(int gemac_port)
 
 		//AR8327 Switch init
 		athrs17_init(mdev);
-
 		//AR8327 WAN PHY4 init
 		athrs17_phy_setup(mdev,EMAC0_PHY_ADDR);
 	}

@@ -12,7 +12,6 @@
  *   Comcerto board.
  *
  */
-
 #include <common.h>
 #include <errno.h>
 #include <malloc.h>
@@ -44,9 +43,8 @@
 
 #define IRAM_PAYLOAD_SEGMENT_SIZE	0xC000
 
-uint32_t temp_nand_ecc_errors[4];
 
-#ifdef CONFIG_NAND_COMCERTO_ECC_24_HW_BCH
+#if defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
 /*
  * spare area layout for BCH ECC bytes calculated over 512-Bytes ECC block size
  */
@@ -75,7 +73,7 @@ static struct nand_ecclayout comcerto_ecc_info_1024_bch = {
 	}
 };
 
-#elif CONFIG_NAND_COMCERTO_ECC_8_HW_BCH
+#elif defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH)
 
 /*
  * spare area layout for BCH ECC bytes calculated over 512-Bytes ECC block size
@@ -100,7 +98,7 @@ static struct nand_ecclayout comcerto_ecc_info_1024_bch = {
 		{.offset = 14, .length = 18}
 	}
 };
-#else
+#else /* Hamming */
 /*
  * spare area layout for Hamming ECC bytes calculated over 512-Bytes ECC block
  * size
@@ -132,9 +130,9 @@ static uint8_t mirror_pattern[] = { '1', 't', 'b', 'B' };
 static struct nand_bbt_descr bbt_main_descr = {
 	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
 		| NAND_BBT_8BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-	.offs = 180,
+	.offs = 44,
 	.len = 4,
-	.veroffs = 184,
+	.veroffs = 48,
 	.maxblocks = 8,
 	.pattern = bbt_pattern,
 };
@@ -142,24 +140,30 @@ static struct nand_bbt_descr bbt_main_descr = {
 static struct nand_bbt_descr bbt_mirror_descr = {
 	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
 		| NAND_BBT_8BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-	.offs = 180,
+	.offs = 44,
 	.len = 4,
-	.veroffs = 184,
+	.veroffs = 48,
 	.maxblocks = 8,
 	.pattern = mirror_pattern,
 };
 
 static uint8_t scan_ff_pattern[] = {0xff};
 
-#ifdef CONFIG_NAND_COMCERTO_ECC_24_HW_BCH
+#if defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
 static struct nand_bbt_descr c2000_badblock_pattern = {
 	.offs = 42,
 	.len = 1,
 	.pattern = scan_ff_pattern
 };
-#elif CONFIG_NAND_COMCERTO_ECC_8_HW_BCH
+#elif defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH)
 static struct nand_bbt_descr c2000_badblock_pattern = {
 	.offs = 14,
+	.len = 1,
+	.pattern = scan_ff_pattern
+};
+#else /* Hamming */
+static struct nand_bbt_descr c2000_badblock_pattern = {
+	.offs = 4,
 	.len = 1,
 	.pattern = scan_ff_pattern
 };
@@ -221,6 +225,11 @@ struct bad_block_table {
 struct comcerto_nand_info {
 	struct mtd_info *mtd;
 };
+
+#ifndef CONFIG_COMCERTO_NAND_ULOADER
+#ifdef CONFIG_COMCERTO_NAND_BBT /* Default: Turned OFF */
+/* code under this flag is intended to be used only when
+IBR NAND Boot is functional. */
 
 /*Scan the nand flash to find the stored BBT and copy it into RAM.
  *
@@ -315,6 +324,8 @@ static int comcerto_block_isbad(struct mtd_info *mtd, loff_t offs)
 	return 0;
 }
 
+#endif /* CONFIG_COMCERTO_NAND_BBT */
+#endif /* CONFIG_COMCERTO_NAND_ULOADER */
 /** Disable/Enable shifting of data to parity module
  *
  * @param[in] en_dis_shift  Enable or disable shift to parity module.
@@ -345,11 +356,11 @@ static void comcerto_enable_hw_ecc(struct mtd_info *mtd, int mode)
 
 #if defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH) || defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
 	ecc_gen_cfg_val &= BCH_MODE;
+	ecc_gen_cfg_val = (ecc_gen_cfg_val & ~(ECC_LVL_MASK)) | (ECC_LVL_VAL << ECC_LVL_SHIFT);
 #else
 	ecc_gen_cfg_val |= HAMM_MODE;
 #endif
 
-	ecc_gen_cfg_val = (ecc_gen_cfg_val & ~(ECC_LVL_MASK)) | (ECC_LVL_VAL << ECC_LVL_SHIFT);
 	ecc_gen_cfg_val = (ecc_gen_cfg_val & ~(BLK_SIZE_MASK)) | nand_device->ecc.size; ;
 
 	writel(ecc_gen_cfg_val, ECC_GEN_CFG);
@@ -409,7 +420,6 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 #endif
 	uint32_t err_corr_data;
 	uint16_t mask, index;
-	uint32_t ecc_corr_stat = 0;
 	uint64_t start = get_time_ns();
 
 	 /* Wait for syndrome calculation to complete */
@@ -426,35 +436,21 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 
 	/* Error found! Correction required */
 #if defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH) || defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
-	MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC BCH Errors found!\n");
+	dev_dbg(mtd->dev, "ECC BCH Errors found!\n");
+
 	/* Initiate correction operation */
 	writel(ECC_POLY_START, ECC_POLY_START_CFG);
 
-	if ((readl(ECC_CORR_STAT)) & ECC_UNCORR) {
-		temp_nand_ecc_errors[0] += 1 ;
-		printf("E");
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC Uncorrectable Errors found!!!! \n");
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "No. of errors %d \n", err_count);
-		return -EIO;
-	}
-
-	MTD_DEBUG(MTD_DEBUG_LEVEL3, "read ECC_CORR_DATA_STAT\n");
-
 	err_corr_data_prev = 0;
+
 	/* Read Correction data status register till header is 0x7FD */
 	do {
 		err_corr_data_prev = readl(ECC_CORR_DATA_STAT);
 		if ((err_corr_data_prev >> ECC_BCH_INDEX_SHIFT) == 0x87FD)
 			break;
-		// This delay seems to be necessary.  Without it, error
-		// correction fails sometimes when running out of IRAM, which
-		// I guess is faster than normal RAM.
-		udelay(15);
-//		printf("Polling ECC_CORR_DATA_STAT!!!! \n");
+		udelay(1);
+		dev_dbg(mtd->dev, "Polling ECC_CORR_DATA_STAT!!!! \n");
 	} while (!is_timeout(start, SECOND * 2));
-
-//	printf("read ECC_CORR_DATA_STAT!!!! \n");
-	MTD_DEBUG(MTD_DEBUG_LEVEL3, "read ECC_CORR_DATA_STAT\n");
 
 	/* start reading error locations */
 	err_corr_data = 0x0;
@@ -464,7 +460,6 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 		err_corr_data = readl(ECC_CORR_DATA_STAT);
 		if ((err_corr_data >> 16) ==  0x87FE)
 			break;
-		temp_nand_ecc_errors[0] += 1 ;
 		if (err_corr_data == err_corr_data_prev)
 			continue;
 		err_corr_data_prev = err_corr_data;
@@ -480,26 +475,26 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 	}
 
 	if (!((readl(ECC_CORR_DONE_STAT)) & ECC_DONE)) {
-		temp_nand_ecc_errors[0] += 1 ;
-		printf("ECC Correction Not done!!!! \n");
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC Correction Not done!!!! \n");
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "No. of errors %d \n", err_count);
+		dev_dbg(mtd->dev, "ECC Correction Not done!!!! \n");
+		dev_dbg(mtd->dev, "No. of errors %d \n", err_count);
 		return -1;
 	}
 
-	temp_nand_ecc_errors[3] += err_count;
-//	printf("No. of errors %d \n", err_count);
-	MTD_DEBUG(MTD_DEBUG_LEVEL3, "No. of errors %d \n", err_count);
+	if ((readl(ECC_CORR_STAT)) & ECC_UNCORR) {
+		dev_dbg(mtd->dev, "ECC Uncorrectable Errors found!!!! \n");
+		return -EIO;
+	}
+
 	return 0;
 
 #else	/* Hamming Mode */
 	if (readl(ECC_POLY_STAT) == ECC_UNCORR_ERR_HAMM) {
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC Uncorrectable Errors found!!!! \n");
+		dev_dbg(mtd->dev, "ECC Uncorrectable Errors found!!!! \n");
 		/* 2 or more errors detected and hence cannot
 		be corrected */
 		return -1; /* uncorrectable */
 	} else {  /* 1-bit correctable error */
-		MTD_DEBUG(MTD_DEBUG_LEVEL3, "ECC Correctable Errors found!!!! \n");
+		dev_dbg(mtd->dev, "ECC Correctable Errors found!!!! \n");
 		err_corr_data = readl(ECC_CORR_DATA_STAT);
 		index = (err_corr_data >> 16) & 0x1FF;
 
@@ -508,7 +503,7 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 			*((uint16_t *)(dat + index)) ^= mask;
 		} else {
 			mask = 1 << (err_corr_data & 0x7);
-			MTD_DEBUG(MTD_DEBUG_LEVEL3, "index = x%x , mask = x%x \n", index, mask);
+			dev_dbg(mtd->dev, "index = x%x , mask = x%x \n", index, mask);
 			*(dat + index) ^= mask;
 		}
 
@@ -516,7 +511,6 @@ static int comcerto_correct_ecc(struct mtd_info *mtd, uint8_t *dat,
 
 	}
 #endif
-	MTD_DEBUG(MTD_DEBUG_LEVEL3, "NO ECC Errors!!!! \n");
 	return 0;
 }
 
@@ -613,8 +607,6 @@ int erase_old_nand_fmt(struct mtd_info *mtd, u8 bb_old_layout)
 {
 
 	struct nand_chip *nand_device = mtd->priv;
-	unsigned int page_addr, page;
-	u_char status;
 
 	printf("erase_old_nand_fmt: Erasing old nand format\n");
 
@@ -643,6 +635,7 @@ int erase_old_nand_fmt(struct mtd_info *mtd, u8 bb_old_layout)
 	if (nand_scan_tail(mtd)) {
 		printf("nand_scan_tail failed \n");
 	}
+	return 0;
 }
 #endif /* CONFIG_COMCERTO_NAND_ERASE_FBB */
 
@@ -686,6 +679,49 @@ static void comcerto_nand_hwcontrol(struct mtd_info *mtd, int cmd,
 static int comcerto_nand_ready(struct mtd_info *mtd)
 {
 	return comcerto_gpio_read(COMCERTO_NAND_RDY) ? 1 : 0;
+}
+
+/**
+ * nand_read_page_raw_syndrome - [INTERN] read raw page data without ecc
+ * @mtd: mtd info structure
+ * @chip: nand chip info structure
+ * @buf: buffer to store read data
+ * @page: page number to read
+ *
+ * We need a special oob layout and handling even when OOB isn't used.
+ */
+static int nand_read_page_raw_syndrome(struct mtd_info *mtd,
+                                        struct nand_chip *chip,
+                                        uint8_t *buf)
+{
+        int eccsize = chip->ecc.size;
+        int eccbytes = chip->ecc.bytes;
+        uint8_t *oob = chip->oob_poi;
+        int steps, size;
+
+        for (steps = chip->ecc.steps; steps > 0; steps--) {
+                chip->read_buf(mtd, buf, eccsize);
+                buf += eccsize;
+
+                if (chip->ecc.prepad) {
+                        chip->read_buf(mtd, oob, chip->ecc.prepad);
+                        oob += chip->ecc.prepad;
+                }
+
+                chip->read_buf(mtd, oob, eccbytes);
+                oob += eccbytes;
+
+                if (chip->ecc.postpad) {
+                        chip->read_buf(mtd, oob, chip->ecc.postpad);
+                        oob += chip->ecc.postpad;
+                }
+        }
+
+        size = mtd->oobsize - (oob - chip->oob_poi);
+        if (size)
+                chip->read_buf(mtd, oob, size);
+
+        return 0;
 }
 
 /** Probes for NAND device on comcerto board.
@@ -768,6 +804,7 @@ static int comcerto_nand_probe(struct device_d *pdev)
 		nand_device->ecc.read_page = comcerto_nand_read_page_hwecc;
 		nand_device->ecc.calculate = comcerto_calculate_ecc;
 		nand_device->ecc.correct = comcerto_correct_ecc;
+		nand_device->ecc.read_page_raw = nand_read_page_raw_syndrome;
 
 		switch (mtd->writesize) {
 		case 512:
@@ -782,7 +819,7 @@ static int comcerto_nand_probe(struct device_d *pdev)
 			nand_device->ecc.bytes = 14;
 			nand_device->ecc.prepad = 0;
 			nand_device->ecc.postpad = 2;
-#else
+#else /* Hamming */
 			nand_device->ecc.layout = &comcerto_ecc_info_512_hamm;
 			nand_device->ecc.bytes = 4;
 			nand_device->ecc.prepad = 0;
@@ -791,17 +828,17 @@ static int comcerto_nand_probe(struct device_d *pdev)
 			break;
 		case 1024:
 			nand_device->ecc.size = mtd->writesize;
-#ifdef CONFIG_NAND_COMCERTO_ECC_24_HW_BCH
+#if defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_bch;
 			nand_device->ecc.bytes = 42;
 			nand_device->ecc.prepad = 0;
 			nand_device->ecc.postpad = 14;
-#elif CONFIG_NAND_COMCERTO_ECC_8_HW_BCH
+#elif defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH)
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_bch;
 			nand_device->ecc.bytes = 14;
 			nand_device->ecc.prepad = 0;
 			nand_device->ecc.postpad = 18;
-#else
+#else /* Hamming */
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_hamm;
 			nand_device->ecc.bytes = 4;
 			nand_device->ecc.prepad = 0;
@@ -811,17 +848,17 @@ static int comcerto_nand_probe(struct device_d *pdev)
 		default:
 			printf("Using default values \n");
 			nand_device->ecc.size =  1024;
-#ifdef CONFIG_NAND_COMCERTO_ECC_24_HW_BCH
+#if defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_bch;
 			nand_device->ecc.bytes = 42;
 			nand_device->ecc.prepad = 0;
 			nand_device->ecc.postpad = 14;
-#elif CONFIG_NAND_COMCERTO_ECC_8_HW_BCH
+#elif defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH)
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_bch;
 			nand_device->ecc.bytes = 14;
 			nand_device->ecc.prepad = 0;
 			nand_device->ecc.postpad = 18;
-#else
+#else /* Hamming */
 			nand_device->ecc.layout = &comcerto_ecc_info_1024_hamm;
 			nand_device->ecc.bytes = 4;
 			nand_device->ecc.prepad = 0;
@@ -829,12 +866,14 @@ static int comcerto_nand_probe(struct device_d *pdev)
 #endif
 			break;
 		}
-#if 1
+
 	nand_device->ecc.steps = mtd->writesize / nand_device->ecc.size;
+
 	if(nand_device->ecc.steps * nand_device->ecc.size != mtd->writesize) {
 		printk(KERN_WARNING "Invalid ecc parameters\n");
 		BUG();
 	}
+
 	nand_device->ecc.total = nand_device->ecc.steps * nand_device->ecc.bytes;
 
 	nand_device->badblock_pattern = &c2000_badblock_pattern;
@@ -842,14 +881,14 @@ static int comcerto_nand_probe(struct device_d *pdev)
 	nand_device->bbt_td = &bbt_main_descr;
 	nand_device->bbt_md = &bbt_mirror_descr;
 	/* update flash based bbt */
-//	nand_device->options |= NAND_USE_FLASH_BBT;
-#endif
-
+	nand_device->options |= NAND_USE_FLASH_BBT;
 	}
 
-#ifdef CONFIG_COMCERTO_NAND_BBT
+#ifdef CONFIG_COMCERTO_NAND_BBT /* Default: Turned OFF */
+/* code under this flag is intended to be used only when
+IBR NAND Boot is functional. */
 	nand_device->scan_bbt = comcerto_scan_bbt;
-#endif
+#endif /* CONFIG_COMCERTO_NAND_BBT */
 
 #ifdef CONFIG_NAND_ECC_HW_SYNDROME
 	nand_init_ecc_hw_syndrome(nand_device);
@@ -863,16 +902,15 @@ static int comcerto_nand_probe(struct device_d *pdev)
 		goto out_nand;
 	}
 
-#ifdef CONFIG_COMCERTO_NAND_BBT
+#ifdef CONFIG_COMCERTO_NAND_BBT /* Default: Turned OFF */
+/* code under this flag is intended to be used only when
+IBR NAND Boot is functional. */
 	mtd->block_isbad = comcerto_block_isbad;
-#endif
-	uint8_t i;
-
-	for (i = 0; i < 4; i++)
-		temp_nand_ecc_errors[i] = 0;
+#endif /* CONFIG_COMCERTO_NAND_BBT */
 
 	/*Name of the mtd device */
 	mtd->name = pdev->name;
+	mtd->dev = pdev;
 
 	add_mtd_device(mtd);
 

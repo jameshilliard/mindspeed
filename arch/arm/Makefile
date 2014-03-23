@@ -59,6 +59,7 @@ machine-$(CONFIG_ARCH_VERSATILE)	:= versatile
 # by CONFIG_* macro name.
 board-$(CONFIG_MACH_OPTIMUS)                    := optimus
 board-$(CONFIG_MACH_COMCERTO_C2K_EVM)           := comcerto-evm
+board-$(CONFIG_MACH_COMCERTO_C2K_MFCNEVM)       := comcerto-mfcnevm
 board-$(CONFIG_MACH_COMCERTO_C2K_ASIC)          := comcerto-asic
 board-$(CONFIG_MACH_COMCERTO_C2K_RTSM)          := comcerto-rtsm
 board-$(CONFIG_MACH_A9M2410)			:= a9m2410

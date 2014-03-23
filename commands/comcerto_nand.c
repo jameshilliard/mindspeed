@@ -92,11 +92,11 @@ BAREBOX_CMD_END
 int erase_nand(ulong offset, ulong count)
 {
         struct cdev *cdev;
-        int err, prot = 0;
+        int err;
 
         cdev = cdev_by_name(NANDDEVNAME);
 
-        printf("Erasing from offset 0x%x count 0x%x...\n",offset,count);
+        printf("Erasing from offset 0x%lx count 0x%lx ...\n", offset, count);
         err = cdev->ops->erase(cdev, count, offset);
         if (err) {
 		perror("erase failed\n");
@@ -115,7 +115,7 @@ EXPORT_SYMBOL(erase_nand);
 
 static int do_erase_nand(struct command *cmdtp, int argc, char *argv[])
 {
-        ulong   src, offset, count;
+        ulong offset, count;
 
         if (argc != 3) {
                 printf ("Usage:\n%s\n", cmdtp->usage);
@@ -154,11 +154,11 @@ BAREBOX_CMD_END
 int update_nand(ulong src, ulong offset, ulong count)
 {
         struct cdev *cdev;
-        int err, prot = 0;
+        int err;
 
         cdev = cdev_by_name(NANDDEVNAME);
 
-        printf("Erasing from offset 0x%x count 0x%x...\n",offset,count);
+        printf("Erasing from offset 0x%lx count 0x%lx ...\n", offset, count);
         err = cdev->ops->erase(cdev, count, offset);
         if (err) {
 		perror("erase failed\n");
@@ -229,7 +229,7 @@ BAREBOX_CMD_END
 int read_nand(ulong src, ulong offset, ulong count)
 {
         struct cdev *cdev;
-        int err, prot = 0;
+        int err;
 
         cdev = cdev_by_name(NANDDEVNAME);
 

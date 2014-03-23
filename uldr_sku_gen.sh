@@ -5,7 +5,7 @@
 }
 
 cd $1
-sku=$(echo $2 | sed -e 's\uloader\\g' | sed -e 's\c2kevm\\g' | sed -e 's\c2kasic\\g' | sed -e 's\nand\\g')
+sku=$(echo $2 | sed -e 's\uloader\\g' | sed -e 's\c2kevm\\g' | sed -e 's\c2kasic\\g' | sed -e 's\nand\\g' | sed -e 's\c2kmfcnevm\\g')
 bin_file=$3
 size=$(ls -l barebox.bin | cut -d' ' -f 5)
 head -c 48 barebox.bin > temp.bin

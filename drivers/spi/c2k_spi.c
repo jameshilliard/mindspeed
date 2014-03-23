@@ -54,91 +54,8 @@ extern int do_write_only_transfer16(struct spi_adapter *, u16 *, int *);
 extern int do_read_only_transfer8(struct spi_adapter *, u8 *, int *);
 extern int do_read_only_transfer16(struct spi_adapter *, u16 *, int *);
 
-extern u32 HAL_get_axi_clk();
-
-/**
- * spi_write - SPI synchronous write
- * @spi: device to which data will be written
- * @buf: data buffer
- * @len: data buffer size
- *
- * This writes the buffer and returns zero or a negative error code.
- */
-int spi_write(struct spi_device *spi, const void *buf, size_t len)
-{
-        struct spi_transfer     t = {
-                        .tx_buf         = buf,
-                        .len            = len,
-                };
-        struct spi_message      m;
-
-        spi_message_init(&m);
-
-        m.status = SPI_TRANSFER_MODE_WRITE_ONLY;
-
-        spi_message_add_tail(&t, &m);
-        return spi_sync(spi, &m);
-}
-EXPORT_SYMBOL(spi_write);
-
-/**
- * spi_read - SPI synchronous read
- * @spi: device from which data will be read
- * @buf: data buffer
- * @len: data buffer size
- *
- * This reads the buffer and returns zero or a negative error code.
- */
-int spi_read(struct spi_device *spi, void *buf, size_t len)
-{
-        struct spi_transfer     t = {
-                        .rx_buf         = buf,
-                        .len            = len,
-                };
-        struct spi_message      m;
-
-        spi_message_init(&m);
-
-        m.status = SPI_TRANSFER_MODE_READ_ONLY;
-
-        spi_message_add_tail(&t, &m);
-        return spi_sync(spi, &m);
-}
-EXPORT_SYMBOL(spi_read);
-
-/**
- * spi_write_then_read - SPI synchronous write followed by read
- * @spi: device with which data will be exchanged
- * @txbuf: data to be written
- * @n_tx: size of txbuf, in bytes
- * @rxbuf: buffer into which data will be read
- * @n_rx: size of rxbuf, in bytes
- *
- * This performs a half duplex style transaction with the
- * device, sending txbuf and then reading rxbuf.  The return value
- * is zero for success, else a negative errno status code.
- */
-int spi_write_then_read(struct spi_device *spi,
-                const void *txbuf, unsigned n_tx,
-                void *rxbuf, unsigned n_rx)
-{
-        struct spi_message      m;
-        struct spi_transfer     t = {
-                        .tx_buf         = txbuf,
-                        .rx_buf         = rxbuf,
-                        .len            = n_tx,
-                };
-
-        spi_message_init(&m);
-
-        m.status = SPI_TRANSFER_MODE_WRITE_READ;
-
-        spi_message_add_tail(&t, &m);
-
-        /* do the i/o */
-        return spi_sync(spi, &m);
-}
-EXPORT_SYMBOL(spi_write_then_read);
+extern u32 HAL_get_axi_clk(void);
+extern int spi_register_master(struct spi_master *master);
 
 /**
  * comcerto_spi_hw_init -
@@ -159,6 +76,7 @@ static void comcerto_spi_hw_init(struct spi_adapter *adaptr)
  *
  *
  */
+#if 0
 static void comcerto_spi_hw_reset(struct spi_adapter *adaptr)
 {
 	/* disable SPI operation */
@@ -167,10 +85,10 @@ static void comcerto_spi_hw_reset(struct spi_adapter *adaptr)
 	/* mask all SPI irq's */
 	writel(0, adaptr->membase + COMCERTO_SPI_IMR);
 }
+#endif
 
 static int c2k_spi_setup(struct spi_device *spi)
 {
-        struct spi_adapter *adapter = container_of(spi->master, struct spi_adapter, master);
 	u32 hz;
 
         spi_debug("%s mode 0x%08x bits_per_word: %d speed: %d\n",
@@ -237,7 +155,7 @@ static int c2k_spi_transfer(struct spi_device *spi, struct spi_message *mesg)
         else
 	{
 		baudr = 0;
-		printf("%s: Baud rate not set!!\n");
+		printf("%s: Baud rate not set!!\n", __func__);
 	}
 
 	ser = (1 << spi->chip_select) ;
@@ -247,7 +165,7 @@ static int c2k_spi_transfer(struct spi_device *spi, struct spi_message *mesg)
 	writel(0, adapter->membase + COMCERTO_SPI_SSIENR);
 
 	list_for_each_entry (t, &mesg->transfers, transfer_list) {
-		u8 *txbuf = t->tx_buf;
+		u8 *txbuf = (u8 *)t->tx_buf;
 		u8 *rxbuf = t->rx_buf;
 
 		switch(op) {
@@ -348,6 +266,7 @@ static int c2k_spi_probe(struct device_d *dev)
  *
  *
  */
+#if 0
 static int comcerto_spi_remove(struct spi_adapter *spi)
 {
 	spi_unregister_master(spi->master);
@@ -356,6 +275,7 @@ static int comcerto_spi_remove(struct spi_adapter *spi)
 
 	return 0;
 }
+#endif
 
 /* barebox framework */
 static struct driver_d c2k_spi_driver = {

@@ -67,28 +67,6 @@ void dma_out_of_reset(void);
 
 //extern u32 HAL_get_axi_clk();
 
-int spi_eeprom_read(struct spi_device *spi,
-                const void *txbuf, unsigned n_tx,
-                void *rxbuf, unsigned n_rx)
-{
-        struct spi_message      m;
-        struct spi_transfer     t = {
-                        .tx_buf         = txbuf,
-                        .rx_buf         = rxbuf,
-                        .len            = n_rx,
-                };
-
-        spi_message_init(&m);
-
-        m.status = SPI_TRANSFER_MODE_EEPROM_READ;
-
-        spi_message_add_tail(&t, &m);
-
-        /* do the i/o */
-        return spi_sync(spi, &m);
-}
-EXPORT_SYMBOL(spi_eeprom_read);
-
 #ifdef	CONFIG_DRIVER_FAST_SPI_DMA
 static int read_dma_complete(U32 chan, U32 dst, U32 data_len, U32 src, struct dma_conf_param *dmaconf)
 {
@@ -422,6 +400,7 @@ static void comcerto_spi_hw_init(struct spi_adapter *adaptr)
  *
  *
  */
+#if 0
 static void comcerto_spi_hw_reset(struct spi_adapter *adaptr)
 {
 	/* disable SPI operation */
@@ -430,6 +409,7 @@ static void comcerto_spi_hw_reset(struct spi_adapter *adaptr)
 	/* mask all SPI irq's */
 	writel(0, adaptr->membase + COMCERTO_SPI_IMR);
 }
+#endif
 
 static int c2k_fast_spi_setup(struct spi_device *spi)
 {
@@ -664,6 +644,7 @@ static int c2k_fast_spi_probe(struct device_d *dev)
  *
  *
  */
+#if 0
 static int comcerto_fast_spi_remove(struct spi_adapter *spi)
 {
 	int ret = 0;
@@ -674,6 +655,7 @@ static int comcerto_fast_spi_remove(struct spi_adapter *spi)
 
 	return ret;
 }
+#endif
 
 /* barebox framework */
 static struct driver_d c2k_fast_spi_driver = {

@@ -29,6 +29,11 @@ config DRIVER_FAST_SPI_C2K
 	depends on SPI
 	default n
 
+config C2K_SPI_API
+	bool "C2K SPI API support"
+	depends on DRIVER_SPI_C2K || DRIVER_FAST_SPI_C2K
+	default y
+
 config C2K_SPI_COMMON
 	bool "C2K SPI common"
 	depends on SPI
@@ -45,6 +50,12 @@ config SPI_FLASH
 	bool "C2K SPI Flash driver"
 	depends on SPI
 	depends on DRIVER_SPI_C2K || DRIVER_FAST_SPI_C2K
+	depends on !COMCERTO_NAND_ULOADER
+	default y
+
+config FAST_SPI_FLASH
+	bool "C2K Fast SPI Flash driver"
+	depends on DRIVER_FAST_SPI_C2K
 	depends on !COMCERTO_NAND_ULOADER
 	default y
 

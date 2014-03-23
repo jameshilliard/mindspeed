@@ -48,10 +48,11 @@
 #define ECC_LVL_30 0x1E
 #define ECC_LVL_32 0x20
 
-/* #define ECC_LVL_VAL ECC_LVL_8 */
-
-/* ECC Level 24 is used */
-#define ECC_LVL_VAL ECC_LVL_24
+#if defined (CONFIG_NAND_COMCERTO_ECC_24_HW_BCH)
+	#define ECC_LVL_VAL ECC_LVL_24 /* ECC Level 24 is used */
+#elif defined (CONFIG_NAND_COMCERTO_ECC_8_HW_BCH)
+	#define ECC_LVL_VAL ECC_LVL_8  /* ECC Level 8 is used */
+#endif
 
 /* Block size used in Bytes*/
 #define ECC_BLOCK_SIZE_512 512
@@ -72,7 +73,6 @@
 #define ECC_SHIFT_DISABLE	0x0
 #define ECC_PARITY_OUT_EN	0x1
 #define ECC_PARITY_OUT_DISABLE	0x0
-#define ECC_UNCORR_ERR_HAMM	0x4
 
 /* Polynomial Start Configuration (ECC_POLY_START_CFG) */
 #define ECC_POLY_START		(1 << 0)

@@ -172,6 +172,11 @@ config CMD_UPDATE_SPI
 	default y
 	prompt "update_spi"
 
+config CMD_UPDATE_FAST_SPI
+	tristate
+	default y
+	prompt "update_fspi"
+
 config CMD_UPDATE_I2C
 	tristate
 	default y

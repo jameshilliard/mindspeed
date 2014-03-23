@@ -36,6 +36,10 @@ config  MACH_COMCERTO_C2K_EVM
         bool "EVM"
         help
 
+config  MACH_COMCERTO_C2K_MFCNEVM 
+        bool "MFCN_EVM"
+        help
+
 config  MACH_COMCERTO_C2K_ASIC
 	bool "ASIC"
 	help

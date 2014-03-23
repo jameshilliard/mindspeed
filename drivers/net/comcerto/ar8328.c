@@ -3,6 +3,10 @@
 #include <miidev.h>
 #include "ar8328.h"
 
+#if defined(CONFIG_MACH_COMCERTO_C2K_MFCNEVM)
+#include <mach/reset.h>
+#endif
+
 #define S17_LAN_PORT_VLAN          1
 #define S17_WAN_PORT_VLAN          2
 
@@ -106,7 +110,12 @@ int athrs17_init(struct mii_device *mdev)
 {
 	int phy_addr; 
 	unsigned int dummy;
-	
+
+#if defined(CONFIG_MACH_COMCERTO_C2K_MFCNEVM)
+	/* Make the Atheros switch out of reset */
+	GPIO_reset_external_device(COMPONENT_ATHEROS_SWITCH,0);
+	udelay(1000000); //here delay 1s to give switch a chance to init.
+#endif
 	//configure the RGMII
 	/* FIXME Configure broadcast ports: the configuration below
 	 * will broadcast on ports 0-5 of the switch.

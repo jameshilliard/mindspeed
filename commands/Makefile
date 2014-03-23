@@ -63,6 +63,7 @@ obj-$(CONFIG_CMD_USB)		+= usb.o
 obj-$(CONFIG_CMD_DIAGS)		+= diags.o
 obj-$(CONFIG_CMD_NOR)		+= nor.o
 obj-$(CONFIG_CMD_UPDATE_SPI)	+= update_spi.o
+obj-$(CONFIG_CMD_UPDATE_FAST_SPI)	+= update_fast_spi.o
 obj-$(CONFIG_CMD_UPDATE_I2C)	+= update_i2c.o
 obj-$(CONFIG_CMD_GEMAC_STATS)	+= gemac_stat.o
 obj-$(CONFIG_CMD_PFE_COMMANDS)	+= pfe_commands.o
