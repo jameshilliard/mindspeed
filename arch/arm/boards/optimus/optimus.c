@@ -327,8 +327,9 @@ static int c2000_device_init(void)
 	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_OUTPUT_REG);
 #endif
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
-	/* Turn off blue LED to indicate the bootloader is running. */
+	/* Turn blue LED off, red LED on, to indicate the bootloader is running. */
 	comcerto_gpio_set_0(GPIO_12);
+	comcerto_gpio_set_1(GPIO_13);
 #endif
 
 	sdram_dev.size = get_ddr_config_size();
