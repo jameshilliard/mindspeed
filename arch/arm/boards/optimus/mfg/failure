@@ -1,0 +1,10 @@
+echo "Failure"
+while true; do
+	# Turn off red LED
+	mw 0x90470000 0x0800c000
+	timeout -s -c 1 || exit 1
+	# Turn on red LED
+	mw 0x90470000 0x0800e000
+	timeout -s -c 1 || exit 1
+done
+

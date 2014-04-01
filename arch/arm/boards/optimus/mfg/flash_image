@@ -1,0 +1,54 @@
+# This file needs to be provided to the TFTP client when it requests the file
+# "gfrg200-mfg/flash_image".
+
+echo "+++++++++++++++++++++++++++++++++++++++++"
+echo "Manufacturing bootstrap script -- Phase 2"
+echo " - Flashing kernel image and rootfs image"
+echo "+++++++++++++++++++++++++++++++++++++++++"
+
+# Turn on red LED
+mw 0x90470000 0x0800e000
+
+# Load NOR and NAND partition layout
+. /default/config
+
+addpart /dev/nor0 $nor_parts
+addpart /dev/nand0 $nand_parts
+
+partition=0
+kernel_image=kernel.img
+rootfs_image=rootfs.img
+kernel_dev=/dev/nand0.kernel${partition}
+rootfs_dev=/dev/nand0.rootfs${partition}
+
+[ -d /tmp ] || mkdir -p /tmp
+
+echo "Downloading kernel image"
+tftp gfrg200-mfg/${kernel_image} /tmp/kernel.img || /failure || exit 1
+crc32 -f /tmp/kernel.img -v 0x2e2eae34 || /failure || exit 1
+echo "Erasing partition"
+erase ${kernel_dev} || /failure || exit 1
+echo "Copying kernel image into partition ${kernel_dev}"
+cp /tmp/kernel.img ${kernel_dev} || /failure || exit 1
+echo "Verifying"
+crc32 -f /tmp/kernel.img -F ${kernel_dev} || /failure || exit 1
+rm /tmp/kernel.img
+
+echo "ubiattach"
+ubiattach ${rootfs_dev} || /failure || exit 1
+echo "Deleting UBI volume rootfs in case it already exists"
+ubirmvol /dev/ubi0 rootfs
+echo "Creating UBI volume rootfs"
+ubimkvol /dev/ubi0 rootfs 0 || /failure || exit 1
+echo "TFTPing rootfs into UBI volume"
+tftp gfrg200-mfg/${rootfs_image} /dev/ubi0.rootfs || /failure || exit 1
+
+# Wipe /env
+
+erase /dev/nor0.env
+
+#
+# Turn red LED off and blue LED on
+mw 0x90470000 0x0800d000
+
+exit 1

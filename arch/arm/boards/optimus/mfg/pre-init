@@ -1,0 +1,20 @@
+# This file needs to be provided to the TFTP client when it requests the file
+# "gfrg200-mfg/pre-init".
+
+echo "+++++++++++++++++++++++++++++++++++++++++"
+echo "Manufacturing bootstrap script -- Phase 1.5"
+echo " - Downloading script that will flash kernel image and rootfs image"
+echo "+++++++++++++++++++++++++++++++++++++++++"
+
+# Activate Ethernet interface
+. /default/config
+
+# Get an IP address from DHCP/TFTP server
+dhcp || exit 1
+
+# Download helper script
+tftp gfrg200-mfg/failure || exit 1
+
+tftp gfrg200-mfg/flash_image || /failure || exit 1
+
+./flash_image

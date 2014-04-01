@@ -1,0 +1,64 @@
+# This file needs to be provided to the TFTP client when it requests the file
+# "gfrg200-mfg/bootstrap".
+#
+# Boot strap script for manufacturing
+# Phase 1:
+# Pre-programmed barebox loads gfrg200-mfg/bootstrap and executes it.  This
+# script then turns on the red LED, upgrades the uloader and barebox, downloads
+# gfrg200-mfg/pre-init and stores it in /env/bin/pre-init.
+#
+# Phase 1.5:
+# New barebox boots up and executes /env/bin/pre-init which downloads and
+# executes gfrg200-mfg/flash_image
+#
+# Phase 2:
+# flash_image downloads and flashes the kernel and rootfs. It finally wipes the
+# env partition to remove /env/bin/pre-init.
+#
+
+echo "+++++++++++++++++++++++++++++++++++++++++"
+echo "Manufacturing bootstrap script -- Phase 1"
+echo " - Upgrading uloader and bootloader"
+echo "+++++++++++++++++++++++++++++++++++++++++"
+
+# Turn on red LED
+mw 0x90470000 0x0800e000
+
+nor_parts="128k(uloader)ro,512k(loader0)ro,512k(loader1)ro,128k(env),2M(hnvram),8M(kernel),8M(initrd)"
+nor_device="comcertoflash.0"
+
+delpart /dev/nor0.*
+addpart /dev/nor0 $nor_parts
+
+# Download helper script
+tftp gfrg200-mfg/failure || reset
+
+# Download and store a script named pre-init in /env/bin/.
+# This script will download and flash the kernel and rootfs on the next reboot.
+# How this works: The new boot loader will check for /env/bin/pre-init. If this
+# file exist, it will execute it before it attempts to boot into Linux.
+[ -d /env/bin ] || mkdir -p /env/bin
+tftp gfrg200-mfg/pre-init /env/bin/pre-init || /failure || exit 1
+saveenv || /failure || exit 1
+
+echo "Upgrading uloader and boot loader"
+tftp gfrg200-mfg/uloader.bin || /failure || exit 1
+crc32 -f uloader.bin -v 0x349919a1 || /failure || exit 1
+tftp gfrg200-mfg/barebox.bin || /failure || exit 1
+crc32 -f barebox.bin -v 0x697a1d50 || /failure || exit 1
+
+# The hush shell does not support functions which is why we have to duplicate
+# code here.
+erase /dev/nor0.uloader || /failure || exit 1
+cp uloader.bin /dev/nor0.uloader || /failure || exit 1
+crc32 -f uloader.bin -F /dev/nor0.uloader || /failure || exit 1
+
+erase /dev/nor0.loader0 || /failure || exit 1
+cp barebox.bin /dev/nor0.loader0 || /failure || exit 1
+crc32 -f barebox.bin -F /dev/nor0.loader0 || /failure || exit 1
+
+erase /dev/nor0.loader1 || /failure || exit 1
+cp barebox.bin /dev/nor0.loader1 || /failure || exit 1
+crc32 -f barebox.bin -F /dev/nor0.loader1 || /failure || exit 1
+
+reset || /failure || exit 1
