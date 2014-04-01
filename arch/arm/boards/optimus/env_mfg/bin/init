@@ -1,0 +1,50 @@
+# During manufacturing, a pre-programmed NOR chip is soldered onto new boards.
+# This script goes into the default environment of the barebox image that is
+# pre-programmed. Hence, it is the first script that is run when the unit comes
+# off the line.
+
+# - Give the operator the chance to interrupt the script with Ctrl-C
+# - Run DHCP client on WAN port
+# - Try to ping DHCP server
+# - Download gfrg200-mfg/bootstrap over TFTP
+# - Execute (i.e. source) bootstrap
+
+# If an error occurs, we reset the board.
+
+autoboot_timeout=2
+
+echo
+echo -n "Hit Ctrl-C to stop autoboot: "
+timeout -c $autoboot_timeout
+if [ $? != 0 ]; then
+	exit
+fi
+
+ethact eth1
+
+echo "Running DHCP client"
+dhcp
+if [ $? != 0 ]; then
+	echo "DHCP failed."
+	reset
+	exit
+fi
+
+echo "Trying to ping server"
+ping $eth1.serverip
+if [ $? != 0 ]; then
+	echo "Cannot ping server."
+	reset
+	exit
+fi
+
+echo "Trying to tftp bootstrap script"
+tftp gfrg200-mfg/bootstrap
+if [ $? != 0 ]; then
+	echo "Cannot download bootstrap script."
+	reset
+	exit
+fi
+
+echo "Running bootstrap script"
+./bootstrap
