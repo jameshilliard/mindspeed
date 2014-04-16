@@ -60,6 +60,8 @@ if [ x${install_rootfs} = xyes ]; then
 	ubiattach ${rootfs_dev}
 	echo "Deleting UBI volume rootfs in case it already exists"
 	ubirmvol /dev/ubi0 rootfs
+	echo "Deleting UBI volume rootfs-prep in case it exists"
+	ubirmvol /dev/ubi0 rootfs-prep
 	echo "Creating UBI volume rootfs"
 	ubimkvol /dev/ubi0 rootfs 0 || exit 1
 	echo "TFTPing rootfs into UBI volume"
