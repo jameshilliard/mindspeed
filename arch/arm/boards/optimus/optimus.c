@@ -200,7 +200,7 @@ struct device_d c2k_nor_dev = {
 	.id	  = -1,
 	.name     = "cfi_flash",
 	.map_base = COMCERTO_AXI_EXP_BASE,
-	.size     = NOR_FLASH_SIZE,
+	.size     = 0, /* auto-detected by cfi_flash driver */
 };
 
 struct device_d csi_flash_dev = {
