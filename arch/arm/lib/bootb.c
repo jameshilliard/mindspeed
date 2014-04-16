@@ -9,6 +9,7 @@
 #include <secure_boot.h>
 #include <sha1.h>
 #include <rsa_verify.h>
+#include <xyzModem.h>
 #include <mach/comcerto-2000.h>
 #include <mach/gpio.h>
 #include <asm/io.h>
@@ -82,6 +83,44 @@ static void bb_go(void *addr)
 	while (1);
 }
 
+#ifdef CONFIG_CMD_BOOTB_UART_DOWNLOAD
+static int getcxmodem(void)
+{
+	if (tstc())
+		return (getc());
+	return -1;
+}
+
+static int load_serial_ymodem(void *dst)
+{
+	int err;
+	int res;
+	connection_info_t info;
+	void *addr = dst;
+
+	info.mode = xyzModem_ymodem;
+	res = xyzModem_stream_open(&info, &err);
+	if (!res) {
+		res = xyzModem_stream_read(addr, 16*1024*1024, &err);
+	} else {
+		printf("%s\n", xyzModem_error(err));
+		return 1;
+	}
+	xyzModem_stream_close(&err);
+	xyzModem_stream_terminate(false, &getcxmodem);
+
+	printf("## Total Size = %d Bytes\n", res);
+
+	return 0;
+}
+#else /* CONFIG_CMD_BOOTB_UART_DOWNLOAD */
+static int load_serial_ymodem(void *dst)
+{
+	printf("YMODEM download not supported\n");
+	return -1;
+}
+#endif /* CONFIG_CMD_BOOTB_UART_DOWNLOAD */
+
 static int verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;
 	u8 *sig, hash[20];
@@ -142,6 +181,11 @@ static int do_bootb_barebox(void)
 	bootopt = ((readl(COMCERTO_GPIO_SYSTEM_CONFIG) >>  BOOTSTRAP_BOOT_OPT_SHIFT) & BOOTSTRAP_BOOT_OPT_MASK);
 	
 	switch(bootopt){
+		case BOOT_UART:
+			printf("\nReady to receive Barebox over UART (bootopt=%d)\n", \
+					bootopt);
+			if (load_serial_ymodem((void *) dst)) return -1;
+			break;
 		default:
 			/*
 			   -With NOR boot the barebox will be loaded from NOR flash.
