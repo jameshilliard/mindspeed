@@ -82,55 +82,6 @@ static void bb_go(void *addr)
 	while (1);
 }
 
-#if !defined(CONFIG_COMCERTO_NAND_ULOADER) && (defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH))
-extern int spi_copy_read(char *, unsigned int , unsigned int , unsigned int );
-#endif
-
-#if !defined(CONFIG_COMCERTO_NAND_ULOADER) && (defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH))
-static void copy_bb_from_spi_flash(char *dst, int count)
-{
-        unsigned int l=0;
-        unsigned int sec=2;
-        unsigned int size=0;
-
-	size = count;
-
-	while (l < (count/SPI_FLASH_SECTOR_SIZE))
-        {	
-		spi_copy_read((char*)dst, SPI_FLASH_SECTOR_SIZE, sec, 0);
-
-		size -= SPI_FLASH_SECTOR_SIZE;
-		dst += SPI_FLASH_SECTOR_SIZE;
-		sec += 1;
-		l++;
-	}
-
-	if(size)
-        {
-		spi_copy_read((char*)dst, size, sec, 0);
-	}
-
-        printf("BB Copying Done\n");
-
-        return;
-}
-
-#if !defined(CONFIG_MACH_COMCERTO_C2K_EVM) && !defined(CONFIG_MACH_COMCERTO_C2K_MFCNEVM) && !defined(CONFIG_MACH_OPTIMUS)
-static void copy_bb_from_fast_spi_flash(char *dst, int count)
-{
-	unsigned int sec = 0x2; // Barebox is stored at sec 0x2 in Fast SPI flash
-	unsigned int offset = 0x0; // Barebox is stored at offset 0x0
-	unsigned int size = count;
-
-	fast_spi_copy_read((char*)dst, size, sec, offset);
-
-	printf("BB Copying Done\n");
-
-	return;
-}
-#endif
-#endif
-
 static int verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;
 	u8 *sig, hash[20];
@@ -163,9 +114,7 @@ static int do_bootb_barebox(void)
 	volatile u32 *src = (u32 *)(COMCERTO_AXI_EXP_BASE + ULOADER_PART_SIZE); /* Start of NOR + uLdr size(128K) */
 	volatile u32 *dst = (u32*)BAREBOX_LODING_ADDR;
 	int count = BAREBOX_PART_SIZE;
-#if defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH)
 	u32 bootopt;
-#endif
 	int timeout = 1;
 #ifdef CONFIG_FORCE_BAREBOX_AUTH
 	bool secure_boot = true;
@@ -190,27 +139,10 @@ static int do_bootb_barebox(void)
 	read_nand(BAREBOX_LODING_ADDR, 0x0, BAREBOX_PART_SIZE);
 #else
 
-#if defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH)
 	bootopt = ((readl(COMCERTO_GPIO_SYSTEM_CONFIG) >>  BOOTSTRAP_BOOT_OPT_SHIFT) & BOOTSTRAP_BOOT_OPT_MASK);
 	
 	switch(bootopt){
-		case BOOT_LS_SPI:
-			//With SPI boot, the barebox will also reside in SPI flash
-			printf("\nCopying Barebox from SPI Flash(bootopt=%d)\n", \
-					BOOT_LS_SPI);
-			copy_bb_from_spi_flash((char*)BAREBOX_LODING_ADDR, count);
-			break;
-#if !defined(CONFIG_MACH_COMCERTO_C2K_EVM) && !defined(CONFIG_MACH_COMCERTO_C2K_MFCNEVM) && !defined(CONFIG_MACH_OPTIMUS)
-		case BOOT_HS_SPI:
-			//With Fast SPI boot, the barebox will also reside in Fast SPI flash
-			printf("\nCopying Barebox from Fast SPI Flash(bootopt=%d)\n", \
-					BOOT_HS_SPI);
-			copy_bb_from_fast_spi_flash((char*)BAREBOX_LODING_ADDR, count);
-			break;
-#endif
 		default:
-
-#endif /* defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH) */
 			/*
 			   -With NOR boot the barebox will be loaded from NOR flash.
 			   -With I2C boot the barebox will be loaded either from NOR flash or NAND. 
@@ -219,12 +151,10 @@ static int do_bootb_barebox(void)
 			   -With other boot option like UART boot, barebox will be loaded from NOR by default
 			 */
 			printf("\nCopying Barebox from NOR Flash(bootopt=%d)\n", \
-					BOOT_16BIT_NOR);
+					bootopt);
 			memcpy((void *)dst, (void *)src, count);
-#if defined(CONFIG_SPI_FLASH) || defined(CONFIG_CSI_FLASH)
 			break;
 	}
-#endif /* */
 
 #endif
 
