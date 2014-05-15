@@ -24,6 +24,7 @@
 extern int read_nand(ulong src, ulong offset, ulong count);
 #endif
 
+#if 0 
 static int bb_timeout(int timeout)
 {
 	int ret = 1;
@@ -61,6 +62,7 @@ out:
 
 	return ret;
 }
+#endif
 
 static void bb_go(void *addr)
 {
@@ -154,7 +156,9 @@ static int do_bootb_barebox(void)
 	volatile u32 *dst = (u32*)BAREBOX_LODING_ADDR;
 	int count = BAREBOX_PART_SIZE;
 	u32 bootopt;
+#if 0
 	int timeout = 1;
+#endif
 #ifdef CONFIG_FORCE_BAREBOX_AUTH
 	bool secure_boot = true;
 #else
@@ -168,8 +172,10 @@ static int do_bootb_barebox(void)
 	secure_boot = (boot_mode == SECURE);
 #endif
 
+#if 0
 	if(!secure_boot && bb_timeout(timeout))
 		return 0;
+#endif
 
 #ifdef CONFIG_COMCERTO_NAND_ULOADER
 	/* this option is used when uloader is in NOR flash or I2C EEPROM and 
