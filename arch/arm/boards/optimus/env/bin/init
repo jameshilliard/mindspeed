@@ -9,10 +9,10 @@ export PATH
 
 . /default/config
 
-# fan: 18 kHz 50%, 50% spinup (quiet)
+# fan: 22.5 kHz 50%, 50% spinup (quiet)
 i2c_write -a 0x04c -r 0x4b 0f
-i2c_write -a 0x04c -r 0x4d 0a
-i2c_write -a 0x04c -r 0x4c 0a
+i2c_write -a 0x04c -r 0x4d 08
+i2c_write -a 0x04c -r 0x4c 08
 
 addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
