@@ -306,6 +306,8 @@ static int c2000_device_init(void)
 	comcerto_gpio_enable_output(GPIO_14|GPIO_15);
 	comcerto_gpio_set_1(GPIO_14|GPIO_15);
 	comcerto_gpio_set_0(GPIO_14|GPIO_15);
+	/* AR8337 requires 10ms reset pulse. */
+	mdelay(10);
 	comcerto_gpio_set_1(GPIO_14|GPIO_15);
 
 	/* Misc Pin Select Register[5:4]: TDM interface Muxing
