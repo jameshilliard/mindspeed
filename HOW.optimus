@@ -1,0 +1,65 @@
+set -e
+
+binaries=$(pwd)/out
+if [ -d $binaries ]; then
+	rm -rf $binaries.old
+	mv -f $binaries $binaries.old
+fi
+mkdir -p $binaries
+
+make distclean
+make optimus_uloader_defconfig ARCH=arm
+make -j 16
+cp uloader.bin $binaries/uloader_unsigned_release.bin
+
+make distclean
+make optimus_mfg_defconfig ARCH=arm
+make -j 16
+cp barebox.bin $binaries/barebox_unsigned_mfg.bin
+
+make distclean
+make optimus_defconfig ARCH=arm
+make -j 16
+cp barebox.bin $binaries/barebox_unsigned_release.bin
+
+make distclean
+make optimus_defconfig ARCH=arm
+echo CONFIG_DEVELOPER_BAREBOX=y >> .config
+make oldconfig
+make -j 16
+cp barebox.bin $binaries/barebox_unsigned_unlocked.bin
+
+(
+set -e
+cd /google/src/files/head/depot/google3/isp/fiber/drm
+type=uloader
+for n in $binaries/uloader_unsigned_*.bin; do
+	signed=$(echo $n | sed -e 's/_unsigned_/_signed_/')
+	blaze run -- //isp/fiber/drm:code_sign_tool sign-image $n --image_type=$type --outfile=$signed
+done
+type=barebox
+for n in $binaries/barebox_unsigned_*.bin; do
+	signed=$(echo $n | sed -e 's/_unsigned_/_signed_/')
+	blaze run -- //isp/fiber/drm:code_sign_tool sign-image $n --image_type=$type --outfile=$signed
+done
+
+blaze --batch run //isp/fiber/drm:drm_keystore_client -- --key_type signing_private_key --output $binaries/gfiber_private.pem
+)
+
+for n in $binaries/*.bin; do
+	sig=$(echo $n | sed -e 's/.bin$/.sig/')
+	openssl dgst -sign $binaries/gfiber_private.pem -sha512 -binary -keyform PEM $n > $sig
+done
+
+rm -f $binaries/gfiber_private.pem
+
+cat << EOF
+######################################################################
+Done
+If all looks good and tests well, check in with the following
+cp out/*.bin out/*.sig ../../loader-bin/mindspeed/optimus/
+cd ../../loader-bin/mindspeed/optimus/
+git add *.bin *.sig
+git commit
+git push gfiber-internal HEAD:refs/for/master
+EOF
