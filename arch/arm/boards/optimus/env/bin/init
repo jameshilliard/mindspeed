@@ -13,6 +13,8 @@ export PATH
 i2c_write -a 0x04c -r 0x4b 0f
 i2c_write -a 0x04c -r 0x4d 08
 i2c_write -a 0x04c -r 0x4c 08
+# enable tachometer so /sys/bus/i2c/devices/0-004c/fan1_input works
+i2c_write -a 0x04c -r 0x03 04
 
 addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
