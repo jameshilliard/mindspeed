@@ -282,6 +282,52 @@ BAREBOX_CMD_START(enable_auth)
 	BAREBOX_CMD_HELP(cmd_enable_auth_help)
 BAREBOX_CMD_END
 
+static int do_enable_auth_jtag_on(struct command *cmdtp, int argc, char *argv[])
+{
+	uint8_t bytes[2], one = 1;
+
+	/* Disable debug mode */
+	otp_write(8, &one, 1);
+
+	/* Enable authentication */
+	otp_write(9, &one, 1);
+
+	/* Set the key size. This is actually a combination of writing 0 to offset 10
+	 * and 1 to offset 11, but there's no need to write 0s. */
+	otp_write(11, &one, 1);
+
+	/* The other item to be set is the package type, to offset 12, but for us this
+	 * is 0, so there's no need to write it. */
+
+	/* Now verify that the correct bytes were written */
+	if (otp_read(0, bytes, 2) != 0) {
+		printf("Error: otp_read failed, unable to verify authentication enabled\n");
+		return 1;
+	}
+
+	if ((bytes[1] & 0xB) != 0xB) {
+		printf("Error: Verification failed!\n");
+		printf("Byte 0 was %.2x\n", bytes[0]);
+		printf("Byte 1 was %.2x\n", bytes[1]);
+		return 1;
+	}
+
+	printf("Verification suceeded. Authentication enabled.\n");
+
+	return 0;
+}
+
+static const __maybe_unused char cmd_enable_auth_jtag_on_help[] =
+"Usage: enable_auth_jtag_on\n"
+"Flips the authentication bit in the OTP but leaves JTAG on.\n"
+"WARNING: After running this, device will only boot securely.\n";
+
+BAREBOX_CMD_START(enable_auth_jtag_on)
+	.cmd		= do_enable_auth_jtag_on,
+	.usage		= "set auth bit in OTP, leave JTAG enabled",
+	BAREBOX_CMD_HELP(cmd_enable_auth_jtag_on_help)
+BAREBOX_CMD_END
+
 static int do_print_otp_config(struct command *cmdtp, int argc, char *argv[])
 {
 	uint8_t bytes[2];
