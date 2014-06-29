@@ -25,13 +25,12 @@ void write_protect_unlock(void)
 void otp_write(u32 offset, u8 *prog_data, int size)
 {
 	int i;
-	u32 read_data = 0, read_done = 0, exp_data = 0;
 
 	if (NULL == prog_data)
-		return RETCODE_ERROR;
+		return;
 
 	if (size <= 0)
-		return RETCODE_ERROR;
+		return;
 
 	/* program the counters */
 	writel(0x01900190, OTP_PGM2CPUMP_COUNTER);
@@ -71,7 +70,7 @@ void otp_write(u32 offset, u8 *prog_data, int size)
 		udelay(OTP_DELAY);
 	}
 }
-EXPORT_SYMBOL(otp_program_verify);
+EXPORT_SYMBOL(otp_write);
 
 /*
  ****************************************
@@ -147,6 +146,7 @@ EXPORT_SYMBOL(otp_read);
 static int c2k_otp_probe(struct device_d *pdev)
 {
 	printf("c2k_otp_probe.\n");
+	return 0;
 }
 
 struct driver_d c2k_otp_driver = {
