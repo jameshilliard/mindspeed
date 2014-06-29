@@ -3,6 +3,9 @@
 
 #define	OTP_DELAY	1000
 
+#define OTP_WRITE_CYCLES 4
+#define OTP_MAX_WRITE_ATTEMPTS 16
+
 // 8K bits
 #define	OTP_SIZE	8 * 1024
 

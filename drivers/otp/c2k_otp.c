@@ -1,10 +1,13 @@
 #include <c2k_otp.h>
+#include <clock.h>
 #include <common.h>
 #include <driver.h>
 #include <init.h>
 #include <asm/io.h>
 #include <mach/hardware.h>
 #include <mach/otp.h>
+
+extern u32 HAL_get_axi_clk(void);
 
 void write_protect_unlock(void)
 {
@@ -24,7 +27,9 @@ void write_protect_unlock(void)
  */
 void otp_write(u32 offset, u8 *prog_data, int size)
 {
-	int i;
+	int i,j,k;
+	u32 axi_clk_rate; /* AXI clock rate in MHz */
+	u32 read_data;
 
 	if (NULL == prog_data)
 		return;
@@ -32,42 +37,80 @@ void otp_write(u32 offset, u8 *prog_data, int size)
 	if (size <= 0)
 		return;
 
+	axi_clk_rate = HAL_get_axi_clk();
 	/* program the counters */
-	writel(0x01900190, OTP_PGM2CPUMP_COUNTER);
-	writel(0x04b004b0, OTP_CPUMP2WEB_COUNTER);
-	writel(0x07d007d0, OTP_WEB_COUNTER);
-	writel(0x03200320, OTP_WEB2CPUMP_COUNTER);
-	writel(0x01900190, OTP_CPUMP2PGM_COUNTER);
-	writel(0x1c, OTP_DATA_OUT_COUNTER);
+	writel(axi_clk_rate * 1 & 0x7FF, OTP_PGM2CPUMP_COUNTER); /* 1 usec */
+	writel(axi_clk_rate * 3 & 0x7FF, OTP_CPUMP2WEB_COUNTER); /* 3 usec */
+	writel(axi_clk_rate * 5 & 0x7FF, OTP_WEB_COUNTER); /* 5 usec */
+	writel(axi_clk_rate * 2 & 0x7FF, OTP_WEB2CPUMP_COUNTER); /* 1 usec */
+	writel(axi_clk_rate * 1 & 0x7FF, OTP_CPUMP2PGM_COUNTER); /* 1 usec */
+	/* 70 nsec */
+	writel( (axi_clk_rate * 7 + 99) / 100 & 0x1FF, OTP_DATA_OUT_COUNTER);
 
 	write_protect_unlock();
+	udelay(1);
 
 	/* rstb drive 0 */
 	writel(0x0, OTP_RSTB_INPUT);
+	ndelay(20);
 	/* rstb drive 1 to have pulse  */
 	writel(0x1, OTP_RSTB_INPUT);
-	udelay(OTP_DELAY);
+	udelay(1);
 
 	for(i = 0 ; i < size ; i++)
 	{
+		if (!prog_data[i]) {
+			/* Skip bits that are 0 because 0 is the default value.
+			 * */
+			continue;
+		}
 		/* Drive the address now */
 		writel(offset + i, OTP_ADDR_INPUT);
 
 		/* Write data to the DATA_IN register */
-		writel(prog_data[i], OTP_DATA_INPUT);
+		/* Remember that we are writing only bits that are 1 */
+		writel(1, OTP_DATA_INPUT);
 
-		/* DLE drive  "1" */
-		writel(0x1, OTP_DLE_INPUT);
-		/* WEB drive  "0" */
-		writel(0x0, OTP_WEB_INPUT);
-		/* WEB drive  "1" */
-		writel(0x1, OTP_WEB_INPUT);
-		/* DLE drive  "0" */
-		writel(0x0, OTP_DLE_INPUT);
+		for (j = 0; j < OTP_MAX_WRITE_ATTEMPTS; j++) {
+			for (k = 0; k < OTP_WRITE_CYCLES; k++) {
+				uint64_t start;
+				/* DLE drive  "1" */
+				writel(0x1, OTP_DLE_INPUT);
+				ndelay(20);
+				/* WEB drive  "0" */
+				writel(0x0, OTP_WEB_INPUT);
+				ndelay(20);
+				/* WEB drive  "1" */
+				writel(0x1, OTP_WEB_INPUT);
+				ndelay(20);
+				/* DLE drive  "0" */
+				writel(0x0, OTP_DLE_INPUT);
 
-/* Write '1' to PGMEN to trigger the whole write and verify operation until PGMEN will be deasserted by HW */
-		writel(0x1, OTP_PGMEN_INPUT);
-		udelay(OTP_DELAY);
+				/* Write '1' to PGMEN to trigger the whole
+				 * write and verify operation until PGMEN will
+				 * be deasserted by HW */
+				writel(0x1, OTP_PGMEN_INPUT);
+				start = get_time_ns();
+				while (readl(OTP_PGMEN_INPUT) & 1 &&
+						!is_timeout(start, 1*MSECOND));
+				if (readl(OTP_PGMEN_INPUT) & 1) {
+					printf("Timeout waiting for PGMEN "
+							"to be deasserted\n");
+				}
+				ndelay(100);
+			}
+			writel(0x1, OTP_READEN_INPUT);
+			ndelay(70);
+			read_data = readl(OTP_DATA_OUTPUT);
+			writel(0x0, OTP_READEN_INPUT);
+			udelay(1);
+			if (read_data&(1<<((offset+i)&7)))
+				break;
+		}
+		if (j==OTP_MAX_WRITE_ATTEMPTS) {
+			printf("Failed to write OTP bit %d\n", offset + i);
+			return;
+		}
 	}
 }
 EXPORT_SYMBOL(otp_write);
