@@ -358,6 +358,12 @@ config CMD_OTP_KEY
 	depends on DRIVER_OTP
 	prompt "OTP writing commands"
 
+config CMD_OTP_STABILITY_TEST
+	default y
+	tristate
+	depends on DRIVER_OTP
+	prompt "OTP stability test"
+
 endmenu
 
 config CMD_TIMEOUT
