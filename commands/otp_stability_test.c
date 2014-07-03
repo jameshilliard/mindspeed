@@ -39,7 +39,7 @@
 #define OTP_KEY_SIZE_BYTES	256
 #define OTP_HEADER_OFFSET_BITS	32
 
-#define LED_BLINK_DELAY_MILLISECONDS 200
+#define LED_BLINK_DELAY_MILLISECONDS 150
 
 /*
  * Dumps a key to stdout, for debugging.
@@ -67,9 +67,20 @@ static void flash_led_forever(void) {
 	while (true) {
 		mdelay(LED_BLINK_DELAY_MILLISECONDS);
 		comcerto_gpio_set_1(GPIO_13);
+		if (ctrlc()) {
+			break;
+		}
+
 		mdelay(LED_BLINK_DELAY_MILLISECONDS);
 		comcerto_gpio_set_0(GPIO_13);
+		if (ctrlc()) {
+			break;
+		}
 	}
+
+	/* Reset to barebox norm: red on, blue off. */
+	comcerto_gpio_set_0(GPIO_12);
+	comcerto_gpio_set_1(GPIO_13);
 }
 
 /*
@@ -150,15 +161,17 @@ static int do_otp_stability_test(struct command *cmdtp, int argc, char *argv[])
 		if (!check_otp_value(provided_key, offset)) {
 			flash_led_forever();
 
-			printf("Error: Unexpected return from flash_led_forever()!\n");
-			rv = 1;
-			goto end;
+			/* User has pressed ctrl-c. */
+			break;
 		}
 
 		good_read_count++;
-		if (good_read_count % 100 == 0) {
+		if (good_read_count % 1000 == 0) {
 			printf("OTP has read correctly %ld times\n", good_read_count);
 		}
+
+		if (ctrlc())
+			break;
 	}
 
 end:
