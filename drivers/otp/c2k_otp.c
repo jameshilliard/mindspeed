@@ -139,7 +139,7 @@ int otp_write(u32 offset, u8 *prog_data, int size)
 		}
 		if(read_data != prog_data[i]) {
 			printf("Warning : failed to write OTP value at bit %d (%d attempts) !\n",
-					i, NP2);
+					offset + i, NP2);
 			/* Not returrning Error here for debug */
 		}
 	}
