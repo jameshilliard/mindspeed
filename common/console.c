@@ -35,6 +35,7 @@
 #include <kfifo.h>
 #include <module.h>
 #include <poller.h>
+#include <secure_boot.h>
 #include <linux/list.h>
 #include <linux/stringify.h>
 
@@ -193,6 +194,11 @@ static int tstc_raw(void)
 {
 	struct console_device *cdev;
 
+#ifndef CONFIG_DEVELOPER_BAREBOX
+	if (get_secure_boot_mode() == SECURE)
+		return 0;
+#endif
+
 	for_each_console(cdev) {
 		if (!(cdev->f_active & CONSOLE_STDIN))
 			continue;
@@ -207,6 +213,11 @@ int getc(void)
 {
 	unsigned char ch;
 	uint64_t start;
+
+#ifndef CONFIG_DEVELOPER_BAREBOX
+	if (get_secure_boot_mode() == SECURE)
+		return 0;
+#endif
 
 	/*
 	 * For 100us we read the characters from the serial driver
