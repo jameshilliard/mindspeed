@@ -41,6 +41,7 @@
 #include <reloc.h>
 #include <asm-generic/memory_layout.h>
 #include <asm/sections.h>
+#include <secure_boot.h>
 
 extern initcall_t __barebox_initcalls_start[], __barebox_early_initcalls_end[],
 		  __barebox_initcalls_end[];
@@ -149,11 +150,14 @@ void start_barebox (void)
 #ifdef CONFIG_DEFAULT_ENVIRONMENT
 	envfs_load("/dev/defaultenv", "/default");
 #endif
-	if (envfs_load(default_environment_path, "/env")) {
-		printf("No valid local environment found on %s. "
-			"There will be no local customisations.\n",
-			default_environment_path);
-	}
+#ifndef CONFIG_DEVELOPER_BAREBOX
+	if (get_secure_boot_mode() == UNSECURE)
+#endif
+		if (envfs_load(default_environment_path, "/env")) {
+			printf("No valid local environment found on %s. "
+				"There will be no local customisations.\n",
+				default_environment_path);
+		}
 #endif
 #ifdef CONFIG_COMMAND_SUPPORT
 	printf("running /default/bin/init...\n");
