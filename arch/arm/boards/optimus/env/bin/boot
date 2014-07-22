@@ -12,4 +12,4 @@ bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr}"
 bootargs="${bootargs} root=$rootpart"
 
 printenv
-bootm /dev/nand0.$kernpart
+bootm /dev/nand0.${kernpart}.bb
