@@ -69,4 +69,71 @@ static inline void set_cr(unsigned int val)
 	  : : "r" (val) : "cc");
 	isb();
 }
+
+#define GEN_CP15_REG_FUNCS(reg, op1, c1, c2, op2) \
+static inline unsigned int arm_read_##reg(void) { \
+	unsigned int val; \
+	__asm__ volatile("mrc p15, " #op1 ", %0, " #c1 "," #c2 "," #op2 : "=r" (val)); \
+	return val; \
+} \
+\
+static inline void arm_write_##reg(unsigned int val) { \
+	__asm__ volatile("mcr p15, " #op1 ", %0, " #c1 "," #c2 "," #op2 :: "r" (val)); \
+	isb(); \
+}
+
+/* armv6+ control regs */
+GEN_CP15_REG_FUNCS(sctlr, 0, c1, c0, 0);
+GEN_CP15_REG_FUNCS(actlr, 0, c1, c0, 1);
+GEN_CP15_REG_FUNCS(cpacr, 0, c1, c0, 2);
+
+GEN_CP15_REG_FUNCS(scr, 0, c1, c1, 0);
+GEN_CP15_REG_FUNCS(sder, 0, c1, c1, 1);
+GEN_CP15_REG_FUNCS(nsacr, 0, c1, c1, 2);
+GEN_CP15_REG_FUNCS(vcr, 0, c1, c1, 3);
+
+GEN_CP15_REG_FUNCS(ttbr, 0, c2, c0, 0);
+GEN_CP15_REG_FUNCS(ttbr0, 0, c2, c0, 0);
+GEN_CP15_REG_FUNCS(ttbr1, 0, c2, c0, 1);
+GEN_CP15_REG_FUNCS(ttbcr, 0, c2, c0, 2);
+GEN_CP15_REG_FUNCS(dacr, 0, c3, c0, 0);
+GEN_CP15_REG_FUNCS(dfsr, 0, c5, c0, 0);
+GEN_CP15_REG_FUNCS(ifsr, 0, c5, c0, 1);
+GEN_CP15_REG_FUNCS(dfar, 0, c6, c0, 0);
+GEN_CP15_REG_FUNCS(wfar, 0, c6, c0, 1);
+GEN_CP15_REG_FUNCS(ifar, 0, c6, c0, 2);
+
+GEN_CP15_REG_FUNCS(fcseidr, 0, c13, c0, 0);
+GEN_CP15_REG_FUNCS(contextidr, 0, c13, c0, 1);
+GEN_CP15_REG_FUNCS(tpidrurw, 0, c13, c0, 2);
+GEN_CP15_REG_FUNCS(tpidruro, 0, c13, c0, 3);
+GEN_CP15_REG_FUNCS(tpidrprw, 0, c13, c0, 4);
+
+/* armv7+ */
+GEN_CP15_REG_FUNCS(midr, 0, c0, c0, 0);
+GEN_CP15_REG_FUNCS(mpidr, 0, c0, c0, 5);
+GEN_CP15_REG_FUNCS(vbar, 0, c12, c0, 0);
+GEN_CP15_REG_FUNCS(mvbar, 0, c12, c0, 1);
+GEN_CP15_REG_FUNCS(cbar, 4, c15, c0, 0);
+
+GEN_CP15_REG_FUNCS(ats1cpr, 0, c7, c8, 0);
+GEN_CP15_REG_FUNCS(ats1cpw, 0, c7, c8, 1);
+GEN_CP15_REG_FUNCS(ats1cur, 0, c7, c8, 2);
+GEN_CP15_REG_FUNCS(ats1cuw, 0, c7, c8, 3);
+GEN_CP15_REG_FUNCS(ats12nsopr, 0, c7, c8, 4);
+GEN_CP15_REG_FUNCS(ats12nsopw, 0, c7, c8, 5);
+GEN_CP15_REG_FUNCS(ats12nsour, 0, c7, c8, 6);
+GEN_CP15_REG_FUNCS(ats12nsouw, 0, c7, c8, 7);
+GEN_CP15_REG_FUNCS(par, 0, c7, c4, 0);
+
+/*
+ * This is used to ensure the compiler did actually allocate the register we
+ * asked it for some inline assembly sequences.  Apparently we can't trust
+ * the compiler from one version to another so a bit of paranoia won't hurt.
+ * This string is meant to be concatenated with the inline asm string and
+ * will cause compilation to stop on mismatch.
+ * (for details, see gcc PR 15089)
+ */
+#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
+
 #endif /* __ASM_ARM_SYSTEM_H */
