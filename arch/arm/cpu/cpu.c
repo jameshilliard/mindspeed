@@ -73,6 +73,9 @@ int icache_status(void)
  */
 void arch_shutdown(void)
 {
+	/* Reset the VBAR register, in case it interferes with Linux. */
+	arm_write_vbar(0);
+
 #ifdef CONFIG_MMU
 	/* nearly the same as below, but this could also disable
 	 * second level cache.
