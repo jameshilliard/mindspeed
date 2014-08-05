@@ -234,6 +234,29 @@ BAREBOX_CMD_START(verify_key)
 	BAREBOX_CMD_HELP(cmd_verify_key_help)
 BAREBOX_CMD_END
 
+static int do_lock_otp(struct command *cmdtp, int argc, char *argv[])
+{
+	if (otp_lock() != 0) {
+		printf("Error: Locking the OTP failed. OTP MAY or MAY NOT be locked!\n");
+		return -1;
+	}
+
+	printf("OTP is now write-locked\n");
+	return 0;
+}
+
+static const __maybe_unused char cmd_lock_otp_help[] =
+"Usage: lock_otp\n"
+"Locks the OTP against further writes.\n"
+"WARNING: This cannot be undone!\n";
+
+BAREBOX_CMD_START(lock_otp)
+	.cmd		= do_lock_otp,
+	.usage		= "lock otp against future writes",
+	BAREBOX_CMD_HELP(cmd_lock_otp_help)
+BAREBOX_CMD_END
+
+
 static int do_enable_auth(struct command *cmdtp, int argc, char *argv[])
 {
 	uint8_t bytes[2], one = 1;

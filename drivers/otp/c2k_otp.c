@@ -225,7 +225,15 @@ int otp_read(u32 offset, u8 *read_data, int size)
 }
 EXPORT_SYMBOL(otp_read);
 
-void otp_lock(void)
+/*
+ * Locks the OTP against future writes.
+ *
+ * Returns 0 on success, non-zero otherwise. Note that a
+ * non-zero return does not mean that the OTP is unlocked, only
+ * that the lock bit did not respond before a timeout expired.
+ * The OTP may become locked in the future.
+ */
+int otp_lock(void)
 {
 	u32 i;
 	u32 pgm2cpump_counter, cpump2web_counter, web_counter, web2cpump_counter;
@@ -311,10 +319,12 @@ void otp_lock(void)
 		udelay(100);
 	}
 
-	if (!(readl(OTP_SECURE_LOCK_OUTPUT) & 1))
+	if (!(readl(OTP_SECURE_LOCK_OUTPUT) & 1)) {
 		printk("Timeout waiting for Security Lock Status Going high \n ");
+		return -1;
+	}
 
-	return;
+	return 0;
 }
 EXPORT_SYMBOL(otp_lock);
 
