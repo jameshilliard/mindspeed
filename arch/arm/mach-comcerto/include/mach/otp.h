@@ -34,9 +34,5 @@
 #define OTP_DATA_OUTPUT         (COMCERTO_OTP_BASE + 0x50)
 #define OTP_HW_SEC_MODE_STATUS  (COMCERTO_OTP_BASE + 0x54)
 
-void otp_wr(u32 s_addr, u8 *prog_data) ;
-
-int otp_read(u32 s_addr, u8 *read_data, int size) ;
-
 #endif
 

@@ -24,6 +24,7 @@
 
 #include <c2k_otp.h>
 #include <command.h>
+#include <common.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fs.h>
