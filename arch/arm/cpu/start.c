@@ -158,8 +158,8 @@ void __naked __bare_init board_init_lowlevel_return(void)
 	/* Get start of binary image */
 	addr -= (uint32_t)&board_init_lowlevel_return - TEXT_BASE;
 
-	/* Copy vector table to 0x0 location */
-	memcpy( (void *)0, (void *)TEXT_BASE, 0x50);
+	/* Setup exception vector table. */
+	arm_write_vbar((unsigned int) &exception_vectors);
 
 	/* relocate to link address if necessary */
 	if (addr != TEXT_BASE)
