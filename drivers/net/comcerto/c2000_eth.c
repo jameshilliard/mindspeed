@@ -565,8 +565,6 @@ static void c2000_eth_remove(struct device_d *dev)
 	struct c2000_eth_dev *priv = (struct c2000_eth_dev *)edev->priv;
 	struct pfe *pfe = &priv->pfe;
 
-	pr_info("%s\n", __func__);
-
 	pfe_remove(pfe);
 
 	free(edev);

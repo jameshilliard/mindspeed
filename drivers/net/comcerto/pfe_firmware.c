@@ -161,8 +161,6 @@ err3:
 */
 void pfe_firmware_exit(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
-
 	class_disable();
 	tmu_disable(0xf);
 #if !defined(CONFIG_UTIL_PE_DISABLED)
