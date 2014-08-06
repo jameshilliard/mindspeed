@@ -21,6 +21,8 @@
 #ifndef __COMCERTO_2000_H__
 #define __COMCERTO_2000_H__
 
+#include <asm-generic/memory_layout.h>
+
 /*
  * IRAM Location to keep C2K Part Number.
  * This location should be fixed and can not be changed.
@@ -132,7 +134,7 @@
 
 #define COMCERTO_SERDES_REG( _num, _ofst) ((COMCERTO_APB_SERDES_BASE + (0x4000 * _num)) + _ofst)
 
-#define TEMP_STACK     0x8300C000
+#define TEMP_STACK     STACK_BASE + STACK_SIZE - 16
 
 #define UART_BASEADDR	0x96400000
 
