@@ -15,17 +15,19 @@ mw 0x90470000 0x0800e000
 addpart /dev/nor0 $nor_parts
 addpart /dev/nand0 $nand_parts
 
+nand -a /dev/nand0.kernel0
+
 partition=0
 kernel_image=kernel.img
 rootfs_image=rootfs.img
-kernel_dev=/dev/nand0.kernel${partition}
+kernel_dev=/dev/nand0.kernel${partition}.bb
 rootfs_dev=/dev/nand0.rootfs${partition}
 
 [ -d /tmp ] || mkdir -p /tmp
 
 echo "Downloading kernel image"
 tftp gfrg200-mfg/${kernel_image} /tmp/kernel.img || /failure || exit 1
-crc32 -f /tmp/kernel.img -v 0x2e2eae34 || /failure || exit 1
+crc32 -f /tmp/kernel.img -v 0xc51d9129 || /failure || exit 1
 echo "Erasing partition"
 erase ${kernel_dev} || /failure || exit 1
 echo "Copying kernel image into partition ${kernel_dev}"

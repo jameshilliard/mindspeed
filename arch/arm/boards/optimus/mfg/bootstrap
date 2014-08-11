@@ -43,9 +43,9 @@ saveenv || /failure || exit 1
 
 echo "Upgrading uloader and boot loader"
 tftp gfrg200-mfg/uloader.bin || /failure || exit 1
-crc32 -f uloader.bin -v 0x349919a1 || /failure || exit 1
+crc32 -f uloader.bin -v 0xe3a10461 || /failure || exit 1
 tftp gfrg200-mfg/barebox.bin || /failure || exit 1
-crc32 -f barebox.bin -v 0x697a1d50 || /failure || exit 1
+crc32 -f barebox.bin -v 0x9f6302df || /failure || exit 1
 
 # The hush shell does not support functions which is why we have to duplicate
 # code here.
