@@ -359,7 +359,7 @@ config CMD_OTP_KEY
 	prompt "OTP writing commands"
 
 config CMD_OTP_STABILITY_TEST
-	default y
+	default n
 	tristate
 	depends on DRIVER_OTP
 	prompt "OTP stability test"
