@@ -336,23 +336,6 @@ config CMD_GO
 	tristate
 	prompt "go"
 
-config CMD_BOOTB
-	default y
-	tristate
-	depends on (COMCERTO_ULOADER || COMCERTO_NAND_ULOADER)
-	prompt "Boot Barebox"
-	help
-	  compile in the 'bootb' command to start Barebox
-
-config CMD_BOOTB_UART_DOWNLOAD
-	default n
-	tristate
-	select CRC16
-	depends on CMD_BOOTB
-	prompt "Allow loading Barebox over UART"
-	help
-	  If uloader has been loaded over UART, load Barebox over UART.
-
 config CMD_OTP_KEY
 	tristate
 	depends on DRIVER_OTP

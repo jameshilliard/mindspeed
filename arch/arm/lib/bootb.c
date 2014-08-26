@@ -85,7 +85,7 @@ static void bb_go(void *addr)
 	while (1);
 }
 
-#ifdef CONFIG_CMD_BOOTB_UART_DOWNLOAD
+#ifdef CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD
 static int getcxmodem(void)
 {
 	if (tstc())
@@ -119,13 +119,13 @@ static int load_serial_ymodem(void *dst)
 
 	return 0;
 }
-#else /* CONFIG_CMD_BOOTB_UART_DOWNLOAD */
+#else /* CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD */
 static int load_serial_ymodem(void *dst)
 {
 	printf("YMODEM download not supported\n");
 	return -1;
 }
-#endif /* CONFIG_CMD_BOOTB_UART_DOWNLOAD */
+#endif /* CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD */
 
 static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;

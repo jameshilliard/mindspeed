@@ -91,6 +91,7 @@ config COMCERTO_ULOADER
 	select COMCERTO_NAND if !MACH_COMCERTO_C2K_RTSM
 #       select COMCERTO_DDR_ECC if !MACH_COMCERTO_C2K_RTSM
 #	select COMCERTO_DDR_TRAINING if !MACH_COMCERTO_C2K_RTSM
+	select HAVE_NOSHELL
 	help
 
 config COMCERTO_NAND_ULOADER
@@ -99,11 +100,21 @@ config COMCERTO_NAND_ULOADER
 	select COMCERTO_DDR if !MACH_COMCERTO_C2K_RTSM
 	select COMCERTO_NAND if !MACH_COMCERTO_C2K_RTSM
 #       select COMCERTO_DDR_ECC if !MACH_COMCERTO_C2K_RTSM
+	select HAVE_NOSHELL
 	help
 
 endchoice
 
 endmenu
+
+config COMCERTO_ULOADER_UART_DOWNLOAD
+	default n
+	tristate
+	select CRC16
+	depends on COMCERTO_ULOADER
+	prompt "Allow loading Barebox over UART"
+	help
+	  If uloader has been loaded over UART, load Barebox over UART.
 
 config COMCERTO_PLL
 	bool

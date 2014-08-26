@@ -1,5 +1,5 @@
 obj-$(CONFIG_CMD_BOOTM)		+= bootm.o
-obj-$(CONFIG_CMD_BOOTB_UART_DOWNLOAD)	+= xyzModem.o
+obj-$(CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD)	+= xyzModem.o
 obj-$(CONFIG_CMD_LINUX16)	+= linux16.o
 obj-$(CONFIG_CMD_LOADB)		+= loadb.o xyzModem.o
 obj-$(CONFIG_CMD_LOADY)		+= loadb.o xyzModem.o
