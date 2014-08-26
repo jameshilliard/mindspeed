@@ -102,14 +102,18 @@ static int load_serial_ymodem(void *dst)
 
 	info.mode = xyzModem_ymodem;
 	res = xyzModem_stream_open(&info, &err);
-	if (!res) {
-		res = xyzModem_stream_read(addr, 16*1024*1024, &err);
-	} else {
+	if (res) {
 		printf("%s\n", xyzModem_error(err));
 		return 1;
 	}
+	err = 0;
+	res = xyzModem_stream_read(addr, 16*1024*1024, &err);
 	xyzModem_stream_close(&err);
 	xyzModem_stream_terminate(false, &getcxmodem);
+	if (err) {
+		printf("%s\n", xyzModem_error(err));
+		return 1;
+	}
 
 	printf("## Total Size = %d Bytes\n", res);
 
@@ -123,7 +127,7 @@ static int load_serial_ymodem(void *dst)
 }
 #endif /* CONFIG_CMD_BOOTB_UART_DOWNLOAD */
 
-static int verify_image(u8 *image_ptr, u32 max_image_len) {
+static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;
 	u8 *sig, hash[20];
 	u32 image_len, sig_offset;
@@ -150,15 +154,7 @@ static int verify_image(u8 *image_ptr, u32 max_image_len) {
 	return rsa_verify(sig, 256, hash);
 }
 
-static int do_bootb_barebox(void)
-{
-	volatile u32 *src = (u32 *)(COMCERTO_AXI_EXP_BASE + ULOADER_PART_SIZE); /* Start of NOR + uLdr size(128K) */
-	volatile u32 *dst = (u32*)BAREBOX_LODING_ADDR;
-	int count = BAREBOX_PART_SIZE;
-	u32 bootopt;
-#if 0
-	int timeout = 1;
-#endif
+static int verify_image(u8 *image_ptr, u32 max_image_len) {
 #ifdef CONFIG_FORCE_BAREBOX_AUTH
 	bool secure_boot = true;
 #else
@@ -172,7 +168,30 @@ static int do_bootb_barebox(void)
 	secure_boot = (boot_mode == SECURE);
 #endif
 
+	if (secure_boot) {
+		printf("\nSecure boot detected; verifying Barebox image\n");
+
+		if (_verify_image(image_ptr, max_image_len) == 0) {
+			printf("Barebox image verified!\n");
+		} else {
+			printf("ERROR: Barebox image verification failed!\n");
+			return -1;
+		}
+	} else {
+		printf("Secure boot not enabled; skipping barebox verification.\n");
+	}
+	return 0;
+}
+
+static int do_bootb_barebox(void)
+{
+	void *src = (void *) (COMCERTO_AXI_EXP_BASE + ULOADER_PART_SIZE); /* Start of NOR + uLdr size(128K) */
+	void *dst = (void *) BAREBOX_LODING_ADDR;
+	int count = BAREBOX_PART_SIZE;
+	int i;
+	u32 bootopt;
 #if 0
+	int timeout = 1;
 	if(!secure_boot && bb_timeout(timeout))
 		return 0;
 #endif
@@ -188,9 +207,15 @@ static int do_bootb_barebox(void)
 	
 	switch(bootopt){
 		case BOOT_UART:
-			printf("\nReady to receive Barebox over UART (bootopt=%d)\n", \
-					bootopt);
-			if (load_serial_ymodem((void *) dst)) return -1;
+#define MAX_UART_DOWNLOAD_ATTEMPTS 3
+			for (i=0; i < MAX_UART_DOWNLOAD_ATTEMPTS; i++) {
+				printf("\nReady to receive Barebox over UART (bootopt=%d)\n", \
+						bootopt);
+				if (load_serial_ymodem((void *) dst)) continue;
+				if (verify_image(dst, count) == 0)
+					break;
+			}
+			if (i == MAX_UART_DOWNLOAD_ATTEMPTS) return -1;
 			break;
 		default:
 			/*
@@ -203,23 +228,16 @@ static int do_bootb_barebox(void)
 			printf("\nCopying Barebox from NOR Flash(bootopt=%d)\n", \
 					bootopt);
 			memcpy((void *)dst, (void *)src, count);
-			break;
+			if (verify_image(dst, count) == 0) break;
+
+			printf("\nTrying secondary partition\n");
+			src += count;
+			memcpy((void *)dst, (void *)src, count);
+			if (verify_image(dst, count) == 0) break;
+			return -1;
 	}
 
 #endif
-
-	if (secure_boot) {
-		printf("\nSecure boot detected; verifying Barebox image\n");
-
-		if (verify_image((u8 *) BAREBOX_LODING_ADDR, BAREBOX_PART_SIZE) == 0) {
-			printf("Barebox image verified!\n");
-		} else {
-			printf("ERROR: Barebox image verification failed!\n");
-			return -1;
-		}
-	} else {
-		printf("Secure boot not enabled; skipping barebox verification.\n");
-	}
 
 	bb_go((void*)(BAREBOX_LODING_ADDR + BAREBOX_HEADER_SIZE));
 
