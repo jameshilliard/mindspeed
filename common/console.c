@@ -194,7 +194,7 @@ static int tstc_raw(void)
 {
 	struct console_device *cdev;
 
-#ifndef CONFIG_DEVELOPER_BAREBOX
+#if !defined(CONFIG_DEVELOPER_BAREBOX) && !defined(CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD)
 	if (get_secure_boot_mode() == SECURE)
 		return 0;
 #endif
@@ -214,7 +214,7 @@ int getc(void)
 	unsigned char ch;
 	uint64_t start;
 
-#ifndef CONFIG_DEVELOPER_BAREBOX
+#if !defined(CONFIG_DEVELOPER_BAREBOX) && !defined(CONFIG_COMCERTO_ULOADER_UART_DOWNLOAD)
 	if (get_secure_boot_mode() == SECURE)
 		return 0;
 #endif
