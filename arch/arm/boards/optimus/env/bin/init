@@ -27,7 +27,11 @@ hnvram from /dev/nor0.hnvram
 [ $HNV_MAC_ADDR_WAN ] && eth1.ethaddr=$HNV_MAC_ADDR_WAN
 [ $HNV_MAC_ADDR_MOCA ] && eth2.ethaddr=$HNV_MAC_ADDR_MOCA
 
-if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
+if [ x$arl  = xfailover ]; then
+  echo "Failing over to other image because antirebootloop=$arl"
+fi
+
+if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 -a x$arl != xfailover ] || [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel0 -a x$arl  = xfailover ]; then
   kernpart=kernel1
   rootpart=rootfs1
 else

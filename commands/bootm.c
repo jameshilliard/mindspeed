@@ -46,6 +46,7 @@
 #include <rsa_verify.h>
 #include <sha1.h>
 #include <secure_boot.h>
+#include <antirebootloop.h>
 
 #ifdef CONFIG_NAND_COMCERTO_ECC_HW_BCH
 extern uint32_t temp_nand_ecc_errors[];
@@ -645,6 +646,8 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 	iflag = disable_interrupts();
 
 	puts ("OK\n");
+
+	antirebootloop_preboot_hook();
 
 	/* loop through the registered handlers */
 	list_for_each_entry(handler, &handler_list, list) {
