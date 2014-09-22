@@ -297,11 +297,9 @@ static int c2000_device_init(void)
 	 *          set high
 	 */
 	comcerto_gpio_enable_output(GPIO_12|GPIO_13);
-	/* Turn off red LED to indicate that the uloader is running. */
-	comcerto_gpio_set_0(GPIO_13);
-	/* Leave blue LED on to indicate that the boot loader is not yet
-	 * running. */
-	comcerto_gpio_set_1(GPIO_12);
+	/* Turn blue LED off, red LED on, to indicate the uloader is running. */
+	comcerto_gpio_set_0(GPIO_12);
+	comcerto_gpio_set_1(GPIO_13);
 
 	comcerto_gpio_enable_output(GPIO_14|GPIO_15);
 	comcerto_gpio_set_1(GPIO_14|GPIO_15);
