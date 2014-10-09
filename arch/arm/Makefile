@@ -39,6 +39,8 @@ ifeq ($(CONFIG_ARM_UNWIND),y)
 CFLAGS_ABI	+=-funwind-tables
 endif
 
+CFLAGS_ABI	+=$(call cc-option,-mno-unaligned-access)
+
 CPPFLAGS += $(CFLAGS_ABI) $(arch-y) $(tune-y)
 AFLAGS   += -include asm/unified.h
 
