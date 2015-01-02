@@ -1,0 +1,67 @@
+#!/bin/sh
+
+if [ -f /env/bin/pre-init ]; then
+	. /env/bin/pre-init || exit
+fi
+
+PATH=/default/bin
+export PATH
+
+. /default/config
+
+# fan: 22.5 kHz 50%, 50% spinup (quiet)
+i2c_write -a 0x04c -r 0x4b 0f
+i2c_write -a 0x04c -r 0x4d 08
+i2c_write -a 0x04c -r 0x4c 08
+# enable tachometer so /sys/bus/i2c/devices/0-004c/fan1_input works
+i2c_write -a 0x04c -r 0x03 04
+
+addpart /dev/nor0 $nor_parts
+
+hnvram from /dev/nor0.hnvram
+[ $HNV_MAC_ADDR ] && eth0.ethaddr=$HNV_MAC_ADDR
+[ $HNV_MAC_ADDR_WAN ] && eth1.ethaddr=$HNV_MAC_ADDR_WAN
+
+if [ x$arl  = xfailover ]; then
+  echo "Failing over to other image because antirebootloop=$arl"
+fi
+
+if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 -a x$arl != xfailover ] || [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel0 -a x$arl  = xfailover ]; then
+  kernpart=kernel1
+  rootpart=rootfs1
+else
+  kernpart=kernel0
+  rootpart=rootfs0
+fi
+
+export kernpart
+export rootpart
+
+echo
+echo -n "Hit Ctrl-C to stop autoboot: "
+timeout -c $autoboot_timeout
+if [ $? = 0 ]; then
+	boot
+
+	# If we reach here, the kernel has failed to boot. Try the other kernel.
+	if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
+		kernpart=kernel0
+		rootpart=rootfs0
+	else
+		kernpart=kernel1
+		rootpart=rootfs1
+	fi
+	echo
+	echo "ERROR: Unable to boot $HNV_ACTIVATED_KERNEL_NAME!
+		Attempting to boot $kernpart instead."
+	echo
+
+	boot
+	echo 'Autoboot failed.'
+fi
+
+echo
+echo 'Run DHCP client by typing "dhcp" or manually set IP address using'
+echo '  eth1.ipaddr=192.168.1.1'
+echo '  eth1.serverip=192.168.1.2'
+echo

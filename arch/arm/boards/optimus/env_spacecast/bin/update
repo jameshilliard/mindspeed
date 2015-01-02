@@ -1,0 +1,70 @@
+#!/bin/sh
+
+install_kernel=no
+install_rootfs=no
+kernel_image=kernel.img
+rootfs_image=rootfs.img
+partition=0
+
+while getopt "hk::r::p:" Option
+do
+if [ ${Option} = k ]; then
+	install_kernel=yes
+	if [ -n ${OPTARG} ]; then
+		kernel_image=${OPTARG}
+	fi
+elif [ ${Option} = r ]; then
+	install_rootfs=yes
+	if [ -n ${OPTARG} ]; then
+		rootfs_image=${OPTARG}
+	fi
+elif [ ${Option} = p ]; then
+	if [ x${OPTARG} = x0 ] || [ x${OPTARG} = x1 ]; then
+		partition=${OPTARG}
+	else
+		echo "Invalid parameter for -p"
+		exit 1
+	fi
+else
+	. /default/bin/_update_help
+	exit 0
+fi
+done
+
+if [ x${install_kernel} != xyes ] && [ x${install_rootfs} != xyes ]; then
+	echo "Specify at least one of -k and -r"
+	echo ""
+	. /default/bin/_update_help
+	exit 0
+fi
+
+[ -d /tmp ] || mkdir -p /tmp
+
+kernel_dev=/dev/nor0.kernel${partition}
+rootfs_dev=/dev/nor0.rootfs${partition}
+
+if [ x${install_kernel} = xyes ]; then
+	echo "Downloading kernel image"
+	tftp ${kernel_image} /tmp/kernel.img || exit 1
+	echo "Erasing partition"
+	erase ${kernel_dev} || exit 1
+	echo "Copying kernel image into partition ${kernel_dev}"
+	cp /tmp/kernel.img ${kernel_dev} || exit 1
+	echo "Verifying"
+	crc32 -f /tmp/kernel.img -F ${kernel_dev} || exit 1
+	rm /tmp/kernel.img
+fi
+
+if [ x${install_rootfs} = xyes ]; then
+	echo "ubiattach"
+	ubiattach ${rootfs_dev}
+	echo "Deleting UBI volume rootfs in case it already exists"
+	ubirmvol /dev/ubi0 rootfs
+	echo "Deleting UBI volume rootfs-prep in case it exists"
+	ubirmvol /dev/ubi0 rootfs-prep
+	echo "Creating UBI volume rootfs"
+	ubimkvol /dev/ubi0 rootfs 0 || exit 1
+	echo "TFTPing rootfs into UBI volume"
+	tftp ${rootfs_image} /dev/ubi0.rootfs || exit 1
+fi
+

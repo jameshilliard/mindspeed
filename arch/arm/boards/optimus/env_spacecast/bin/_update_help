@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "Usage: update [-p partition] [-k [kernel image filename]] [-r [rootfs filename]]"
+echo "Update kernel and/or rootfs over tftp"
+echo ""
+echo "Options"
+echo " -p     choose partition. Use 0 or 1. Default is 0"
+echo " -k     Update kernel. Default filename is kernel.img"
+echo " -r     Update kernel. Default filename is rootfs.img"
+echo ""
+echo "Example"
+echo "# Update kernel and rootfs"
+echo "update -k -r"
