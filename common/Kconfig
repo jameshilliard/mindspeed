@@ -475,6 +475,21 @@ config DEFAULT_ENVIRONMENT_PATH
 config POLLER
 	bool "generic polling infrastructure"
 
+config ANTIREBOOTLOOP
+	bool "Anti reboot loop feature"
+	help
+	  The anti reboot loop feature is a communication protocol between the
+	  bootloader and the kernel that allows the bootloader to determine if a
+	  certain kernel/rootfs image is "good". The way it works is that the
+	  bootloader writes a certain bit pattern to a previously agreed memory
+	  location. If a userspace app decides that the kernel has booted ok and
+	  that the user space environment is sane, it tells the kernel which then
+	  flips a bit in DRAM to communicate to the bootloader that this image is
+	  considered "good".  Now, if the system reboots due to some failure
+	  condition before said bit has been flipped, the bootloader is able to
+	  detect this situation and switch back to a different kernel/rootfs
+	  image.
+
 endmenu
 
 menu "Debugging                     "

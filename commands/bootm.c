@@ -647,7 +647,9 @@ static int do_bootm(struct command *cmdtp, int argc, char *argv[])
 
 	puts ("OK\n");
 
+#ifdef CONFIG_ANTIREBOOTLOOP
 	antirebootloop_preboot_hook();
+#endif
 
 	/* loop through the registered handlers */
 	list_for_each_entry(handler, &handler_list, list) {

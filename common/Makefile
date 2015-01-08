@@ -8,7 +8,7 @@ obj-$(CONFIG_AUTO_COMPLETE)	+= complete.o
 obj-$(CONFIG_POLLER)		+= poller.o
 obj-$(CONFIG_BLOCK)		+= block.o
 
-obj-y += antirebootloop.o
+obj-$(CONFIG_ANTIREBOOTLOOP)	+= antirebootloop.o
 obj-y += memory.o
 obj-$(CONFIG_MALLOC_DLMALLOC) += dlmalloc.o
 obj-$(CONFIG_MALLOC_DUMMY) += dummy_malloc.o
