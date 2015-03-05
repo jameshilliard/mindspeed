@@ -5,6 +5,8 @@
 #include <mach/ddr.h>
 #include <mach/gpio.h>
 
+/* This array is called optimus_ddrc_cfg for historic reasons. */
+/* It applies to both Optimus and SpaceCast. */
 static struct ddr_reg_val optimus_ddrc_cfg[] = {
 	{DDRC_CTL_00_REG, 0x20410600LL},
 	{DDRC_CTL_02_REG, 0x00000006LL},
@@ -76,6 +78,8 @@ static struct ddr_reg_val optimus_ddrc_cfg[] = {
 	{0, 0}
 };
 
+/* This array is called optimus_ddr_phy_cfg for historic reasons. */
+/* It applies to both Optimus and SpaceCast. */
 static struct ddr_reg_val optimus_ddr_phy_cfg[] = {
 	{DDR_PHY_CTL_00_REG, 0x000F1023LL},
 	{DDR_PHY_CTL_01_REG, 0x18201010LL},
@@ -177,6 +181,7 @@ static struct ddr_config board_id_to_ddr_config[] = {
 	{optimus_ddr_phy_cfg, optimus_ddrc_cfg, SZ_1G, "Optimus"},
 	/* Nanya NT5CB128M16FP-DI, 533MHz, 32bit, NoECC */
 	{sideswipe_ddr_phy_cfg, sideswipe_ddrc_cfg, SZ_512M, "Sideswipe"},
+	{optimus_ddr_phy_cfg, optimus_ddrc_cfg, SZ_1G, "SpaceCast"},
 };
 
 static struct ddr_config bad_board_id_ddr_config = {0, 0, 0, "Unknown"};
@@ -192,6 +197,7 @@ static int get_board_id(void) {
 	 * The bit patterns are defined as follows:
 	 * Optimus=000
 	 * Sideswipe=001
+	 * SpaceCast=010
 	*/
 
 	/* We usually set up GPIO pins in c2000_device_init(), but the latter
