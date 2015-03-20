@@ -43,10 +43,12 @@
 #include <rtc.h>
 #include <init.h>
 #include <asm-generic/memory_layout.h>
+#include <rsa_public_key.h>
 #include <rsa_verify.h>
 #include <sha1.h>
 #include <secure_boot.h>
 #include <antirebootloop.h>
+#include <board_id.h>
 
 #ifdef CONFIG_NAND_COMCERTO_ECC_HW_BCH
 extern uint32_t temp_nand_ecc_errors[];
@@ -314,6 +316,8 @@ struct image_handle *map_image(const char *filename, int verify,
 		}
 
 		if (secure_boot) {
+			const struct rsa_public_key *public_key = NULL;
+
 			/* Finish off the SHA-1 hash. */
 			sha1_update(&ctx, handle->data, len);
 			sha1_update(&ctx, verity_table, verity_table_len);
@@ -327,7 +331,12 @@ struct image_handle *map_image(const char *filename, int verify,
 				goto err_out;
 			}
 
-			if (rsa_verify(sig, SB_SIG_LEN, hash) != 0) {
+			if (rsa_get_public_key(OPTIMUS_BOARD_ID, &public_key) != 0) {
+				printf("Could not get public key!\n");
+				goto err_out;
+			}
+
+			if (rsa_verify(public_key, sig, SB_SIG_LEN, hash) != 0) {
 				printf("Authentication failed!\n");
 				goto err_out;
 			}

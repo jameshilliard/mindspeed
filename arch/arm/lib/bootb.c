@@ -8,11 +8,13 @@
 #include <malloc.h>
 #include <secure_boot.h>
 #include <sha1.h>
+#include <rsa_public_key.h>
 #include <rsa_verify.h>
 #include <xyzModem.h>
 #include <mach/comcerto-2000.h>
 #include <mach/gpio.h>
 #include <asm/io.h>
+#include <board_id.h>
 
 #define ULOADER_PART_SIZE 0x20000 /* 128 KB */
 #define BAREBOX_PART_SIZE 0x80000
@@ -129,6 +131,7 @@ static int load_serial_ymodem(void *dst)
 
 static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	sha1_context ctx;
+	const struct rsa_public_key *public_key = NULL;
 	u8 *sig, hash[20];
 	u32 image_len, sig_offset;
 
@@ -151,7 +154,12 @@ static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	image_ptr += sig_offset;
 	sig = image_ptr;
 
-	return rsa_verify(sig, 256, hash);
+	if (rsa_get_public_key(OPTIMUS_BOARD_ID, &public_key) != 0) {
+		printf("ERROR: could not verify barebox image (no public key)\n");
+		return -1;
+	}
+
+	return rsa_verify(public_key, sig, 256, hash);
 }
 
 static int verify_image(u8 *image_ptr, u32 max_image_len) {
@@ -245,4 +253,3 @@ static int do_bootb_barebox(void)
 }
 
 late_initcall(do_bootb_barebox);
-
