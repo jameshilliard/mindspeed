@@ -1,5 +1,16 @@
 set -e
 
+target="$1"
+
+if [ "$target" == "optimus" ]; then
+	barebox_config="optimus_defconfig"
+elif [ "$target" == "spacecast" ]; then
+	barebox_config="spacecast_defconfig"
+else
+	echo "Usage: $0 [optimus|spacecast]" >&2
+	exit 1
+fi
+
 binaries=$(pwd)/out
 if [ -d $binaries ]; then
 	rm -rf $binaries.old
@@ -18,12 +29,12 @@ make -j 16
 cp barebox.bin $binaries/barebox_unsigned_mfg.bin
 
 make distclean
-make optimus_defconfig ARCH=arm
+make $barebox_config ARCH=arm
 make -j 16
 cp barebox.bin $binaries/barebox_unsigned_release.bin
 
 make distclean
-make optimus_defconfig ARCH=arm
+make $barebox_config ARCH=arm
 echo CONFIG_DEVELOPER_BAREBOX=y >> .config
 make oldconfig
 make -j 16
@@ -57,8 +68,8 @@ cat << EOF
 ######################################################################
 Done
 If all looks good and tests well, check in with the following
-cp out/*.bin out/*.sig ../../loader-bin/mindspeed/optimus/
-cd ../../loader-bin/mindspeed/optimus/
+cp out/*.bin out/*.sig ../../loader-bin/mindspeed/$target/
+cd ../../loader-bin/mindspeed/$target/
 git add *.bin *.sig
 git commit
 git push gfiber-internal HEAD:refs/for/master
