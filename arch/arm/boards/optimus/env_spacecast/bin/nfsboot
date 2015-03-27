@@ -5,8 +5,8 @@
 mtdparts="${nor_device}:${nor_parts}"
 bootargs="${bootargs} mtdparts=${mtdparts}"
 bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr}"
-bootargs="${bootargs} root=${eth0.serverip}:/mr"
-bootargs="${bootargs} ip=${eth0.ipaddr}::${eth0.gateway}::spacecast:lan0:off"
+bootargs="${bootargs} root=${eth1.serverip}:/mr"
+bootargs="${bootargs} ip=${eth1.ipaddr}::${eth1.gateway}::spacecast:lan0:off"
 
 tftp gfsc100.img
 bootm gfsc100.img

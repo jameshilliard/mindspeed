@@ -50,7 +50,6 @@ struct gemac_s gem_info[] = {
 
 		/* phy iface */
 		.phy_reg_index = EMAC_PORT_0,
-		.phy_address = EMAC0_PHY_ADDR,
 	},
 	/* PORT_1 configuration */
 	{
@@ -62,7 +61,6 @@ struct gemac_s gem_info[] = {
 
 		/* phy iface */
 		.phy_reg_index = EMAC_PORT_0,
-		.phy_address = EMAC1_PHY_ADDR,
 	},
 
 	/* PORT_2 configuration */
@@ -75,7 +73,6 @@ struct gemac_s gem_info[] = {
 
 		/* phy iface */
 		.phy_reg_index = EMAC_PORT_0,
-		.phy_address = 0,
 	},
 };
 
@@ -537,7 +534,7 @@ static int c2000_eth_probe(struct device_d *dev)
 	priv->phyregisters = (void *)gem_info[gem_info[priv->gemac_port].phy_reg_index].gemac_base;
 	priv->miidev.read = c2000_phy_read;
 	priv->miidev.write = c2000_phy_write;
-	priv->miidev.address = gem_info[priv->gemac_port].phy_address;
+	priv->miidev.address = priv->einfo->phy_addr;
 	priv->miidev.flags = 0;
 	priv->miidev.edev = edev;
 

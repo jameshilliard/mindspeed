@@ -1,5 +1,5 @@
 #!/bin/sh
-ethact eth0
+ethact eth1
 
 if [ -f /env/ethaddrs ]; then
 	. /env/ethaddrs

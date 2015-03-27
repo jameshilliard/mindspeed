@@ -186,39 +186,6 @@ static struct ddr_config board_id_to_ddr_config[] = {
 
 static struct ddr_config bad_board_id_ddr_config = {0, 0, 0, "Unknown"};
 
-/* This variable is for debugging purposes. A developer can get its address
- * with "grep optimus_board_id System.map" and then examine it later with "md
- * 0x<address>" from barebox. */
-int optimus_board_id = 0x9999999;
-
-static int get_board_id(void) {
-	int board_id;
-	/* We determine the type of board by reading GPIO pins 57, 56 and 55
-	 * The bit patterns are defined as follows:
-	 * Optimus=000
-	 * Sideswipe=001
-	 * SpaceCast=010
-	*/
-
-	/* We usually set up GPIO pins in c2000_device_init(), but the latter
-	 * runs only after this function. */
-
-	/* GPIO[55-57] and CORESIGHT_D[11-13] are muxed on the same pins. Set
-	 * pin Select Register to select GPIO[55-57].  Pin Output Register is 0
-	 * by default. */
-	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 7<<(55-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
-
-	/* Set GPIO[55-57] to input */
-	writel(readl(COMCERTO_GPIO_63_32_OE_REG) | 7<<(55-32), COMCERTO_GPIO_63_32_OE_REG);
-
-	/* Read 3 bit board id */
-	board_id = (readl(COMCERTO_GPIO_63_32_INPUT_REG) >> (55-32)) & 7;
-
-	optimus_board_id = board_id | 0xabcd0000;
-
-	return board_id;
-}
-
 const char *get_ddr_config_description(void) {
 	return get_ddr_config().description;
 }

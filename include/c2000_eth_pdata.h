@@ -5,6 +5,7 @@
 struct c2000_eth_platform_data {
 	int gemac_port;
 	u8 mac_addr[6];
+	u32 phy_addr;
 };
 
 #endif
