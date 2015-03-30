@@ -50,6 +50,7 @@
 #include <mach/i2c.h>
 #include <mach/otp.h>
 #include <mach/ddr.h>
+#include "optimus.h"
 
 #define PHY_DEVICE      "phy0"
 
@@ -443,6 +444,7 @@ int c2000_eth_board_init(int gemac_port)
 			athrs17_phy_setup(mdev,EMAC1_PHY_ADDR);
 		}
 	}
+	return 0;
 }
 
 device_initcall(c2000_device_init);
