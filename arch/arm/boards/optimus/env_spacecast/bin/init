@@ -19,8 +19,7 @@ i2c_write -a 0x04c -r 0x03 04
 addpart /dev/nor0 $nor_parts
 
 hnvram from /dev/nor0.hnvram
-[ $HNV_MAC_ADDR ] && eth0.ethaddr=$HNV_MAC_ADDR
-[ $HNV_MAC_ADDR_WAN ] && eth1.ethaddr=$HNV_MAC_ADDR_WAN
+[ $HNV_MAC_ADDR ] && eth1.ethaddr=$HNV_MAC_ADDR
 
 if [ x$arl  = xfailover ]; then
   echo "Failing over to other image because antirebootloop=$arl"
