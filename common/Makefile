@@ -27,6 +27,7 @@ obj-$(CONFIG_MENU) += menu.o
 obj-$(CONFIG_PASSWORD) += password.o
 obj-$(CONFIG_MODULES) += module.o
 extra-$(CONFIG_MODULES) += module.lds
+obj-$(CONFIG_TPM_LITE) += tlcl.o
 
 ifdef CONFIG_DEFAULT_ENVIRONMENT
 $(obj)/startup.o: include/generated/barebox_default_env.h

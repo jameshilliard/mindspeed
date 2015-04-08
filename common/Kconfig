@@ -490,6 +490,14 @@ config ANTIREBOOTLOOP
 	  detect this situation and switch back to a different kernel/rootfs
 	  image.
 
+if TPM
+
+config TPM_LITE
+	bool "Lightweight TPM library"
+	default y
+
+endif
+
 endmenu
 
 menu "Debugging                     "
