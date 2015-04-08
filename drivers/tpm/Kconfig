@@ -4,4 +4,9 @@ config TPM
 	bool "Enable TPM driver support"
 	default n
 
+config TPM_I2C_INFINEON
+	depends on TPM && I2C
+	bool "Enable driver for Infineon TPMs connected to an I2C bus"
+	default n
+
 endmenu
