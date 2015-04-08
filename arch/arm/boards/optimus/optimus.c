@@ -59,6 +59,8 @@
 #define SPACECAST_BOARD_ID		2
 #define SPACECAST_EMAC1_PHY_ADDR	1
 
+#define SPACECAST_TPM_I2C_ADDR		0x20
+
 #ifdef CONFIG_SPI
 //Legacy spi
 
@@ -190,9 +192,15 @@ struct device_d c2k_i2c_dev = {
 	.platform_data = &pdata,
 };
 
-static struct i2c_board_info i2c_devices[] = {
+static struct i2c_board_info i2c_devices_optimus[] = {
 	{
 		I2C_BOARD_INFO("eeprom", CFG_I2C_EEPROM0_ADDR),
+	},
+};
+
+static struct i2c_board_info i2c_devices_spacecast[] = {
+	{
+		I2C_BOARD_INFO("tpm_i2c_infineon", SPACECAST_TPM_I2C_ADDR),
 	},
 };
 #endif
@@ -262,7 +270,13 @@ static int c2000_device_init(void)
 	register_device(&fast_uart_device);
 
 #ifdef CONFIG_I2C_C2K
-	i2c_register_board_info(0, i2c_devices, ARRAY_SIZE(i2c_devices));
+	if (get_board_id() == SPACECAST_BOARD_ID) {
+		i2c_register_board_info(0, i2c_devices_spacecast,
+					ARRAY_SIZE(i2c_devices_spacecast));
+	} else {
+		i2c_register_board_info(0, i2c_devices_optimus,
+					ARRAY_SIZE(i2c_devices_optimus));
+	}
 	register_device(&c2k_i2c_dev);
 #endif
 
@@ -448,4 +462,3 @@ int c2000_eth_board_init(int gemac_port)
 }
 
 device_initcall(c2000_device_init);
-
