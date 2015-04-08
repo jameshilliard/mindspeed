@@ -283,52 +283,7 @@ static uchar i2c_write_byte (struct device_d *pdev, unsigned char *data, int len
 	return (0);
 }
 
-static uchar i2c_set_dev_offset (struct device_d *pdev, uchar dev_addr, struct i2c_msg *msgs, int ten_bit, int alen)
-{
-	uchar status;
-	unsigned int table[2];
-
-/* initialize the table of address offset bytes */
-/* utilized for 2 byte address offsets */
-/* NOTE: the order is high byte first! */
-	if (alen == 2) {
-		table[1] = msgs->buf[1];	/* low byte */
-	}
-		table[0] = msgs->buf[0];	/* single byte */
-
-
-	status = i2c_select_device (pdev, dev_addr, 0, ten_bit);
-	if (status) {
-		dev_dbg(pdev, "Failed to select device setting offset: 0x%02x\n", status);
-		return status;
-	}
-/* check the address offset length */
-	if (alen == 0)
-		/* no address offset */
-		return (0);
-	else if (alen == 1) {
-		/* 1 byte address offset */
-		status = i2c_write_data (pdev, table, 1);
-		if (status) {
-			dev_dbg(pdev, "Failed to write data: 0x%02x\n", status);
-			return status;
-		}
-	} else if (alen == 2) {
-		/* 2 bytes address offset */
-		status = i2c_write_data (pdev, table, 2);
-		if (status) {
-			dev_dbg(pdev, "Failed to write data: 0x%02x\n", status);
-			return status;
-		}
-	} else {
-		/* address offset unknown or not supported */
-		dev_dbg(pdev, "Address length offset %d is not supported\n", alen);
-		return 1;
-	}
-	return 0;		/* sucessful completion */
-}
-
-uchar i2c_read (struct device_d *pdev, uchar dev_addr, struct i2c_msg *msgs, int alen, uchar * data, int len)
+uchar i2c_read (struct device_d *pdev, uchar dev_addr, uchar * data, int len)
 {
 	uchar status = 0;
 	struct i2c_platform_data *pdata;
@@ -344,20 +299,6 @@ uchar i2c_read (struct device_d *pdev, uchar dev_addr, struct i2c_msg *msgs, int
 
 	if (status) {
 		dev_dbg(pdev, "Transaction start failed: 0x%02x\n", status);
-		return status;
-	}
-
-	status = i2c_set_dev_offset (pdev, dev_addr, msgs, 0, alen);	/* send the slave address + offset */
-	if (status) {
-		dev_dbg(pdev, "Failed to set slave address & offset: 0x%02x\n", status);
-		return status;
-	}
-
-	i2c_init (pdev, i2cFreq, 0);	/* set the i2c frequency again */
-
-	status = i2c_start (pdev);
-	if (status) {
-		dev_dbg(pdev, "Transaction restart failed: 0x%02x\n", status);
 		return status;
 	}
 
@@ -384,14 +325,12 @@ void i2c_stop (struct device_d *pdev)
 
 /* I2C write function */
 /* dev_addr = device address */
-/* offset = address offset */
-/* alen = length in bytes of the address offset */
-/* data = pointer to buffer to read data into */
-/* len = # of bytes to read */
+/* data = pointer to the data to send */
+/* len = # of bytes to send */
 /* */
 /* returns 0 = succesful */
 /*         anything but zero is failure */
-uchar i2c_write (struct device_d *pdev, uchar dev_addr, struct i2c_msg *msgs, int alen, uchar * data, int len)
+uchar i2c_write (struct device_d *pdev, uchar dev_addr, uchar * data, int len)
 {
 	uchar status = 0;
         struct i2c_platform_data *pdata;
@@ -410,15 +349,13 @@ uchar i2c_write (struct device_d *pdev, uchar dev_addr, struct i2c_msg *msgs, in
 		return status;
 	}
 
-	status = i2c_set_dev_offset (pdev, dev_addr, msgs, 0, alen);	/* send the slave address + offset */
+	status = i2c_select_device (pdev, dev_addr, 0, 0);
 	if (status) {
-		dev_dbg(pdev, "Failed to set slave address & offset: 0x%02x\n", status);
+		dev_dbg(pdev, "Failed to set slave address: 0x%02x\n", status);
 		return status;
 	}
 
-	data += alen;
-
-	status = i2c_write_byte (pdev, data, len - alen);	/* write the data */
+	status = i2c_write_byte (pdev, data, len);	/* write the data */
 	if (status) {
 		dev_dbg(pdev, "Data not written: 0x%02x\n", status);
 		return status;
@@ -441,9 +378,9 @@ static int i2c_c2k_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int n
         /* read/write data */
 	i = num-1;
         if (msgs[i].flags & I2C_M_RD)
-		result = i2c_read(adapter->dev, msgs[i].addr, msgs, 2, msgs[i].buf, msgs[i].len);
+		result = i2c_read(adapter->dev, msgs[i].addr, msgs[i].buf, msgs[i].len);
         else
-	        result = i2c_write(adapter->dev, msgs->addr, msgs, 2, msgs->buf, msgs->len);
+		result = i2c_write(adapter->dev, msgs->addr, msgs->buf, msgs->len);
 
 	if (result)
                 goto fail0;
@@ -496,4 +433,3 @@ static int c2k_i2c_driverinit(void)
 }
 
 device_initcall(c2k_i2c_driverinit);
-
