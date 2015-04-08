@@ -13,4 +13,5 @@ obj-y	+= mfd/
 obj-$(CONFIG_LED) += led/
 obj-y += otp/
 obj-$(CONFIG_COMCERTO_SATA)	+= sata/
+obj-y += tpm/
 

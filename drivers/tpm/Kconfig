@@ -1,0 +1,7 @@
+menu "TPM driver                "
+
+config TPM
+	bool "Enable TPM driver support"
+	default n
+
+endmenu

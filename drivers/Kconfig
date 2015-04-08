@@ -14,5 +14,6 @@ source "drivers/clk/Kconfig"
 source "drivers/mfd/Kconfig"
 source "drivers/led/Kconfig"
 source "drivers/otp/Kconfig"
+source "drivers/tpm/Kconfig"
 
 endmenu
