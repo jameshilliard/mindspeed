@@ -134,11 +134,8 @@ static uchar i2c_get_data (struct device_d *pdev, uchar *return_data, int len)
 	unsigned int data, status = 0;
 	int count = 0;
 
-	printf("\n*\n");
 	while (len) {
 
-		if (!(len % 128))
-			printf("#");
 		/* Get and return the data */
 		writel(readl(pdev->map_base + I2C_CNTR) & ~I2C_IFLG, pdev->map_base + I2C_CNTR);
 
@@ -164,7 +161,6 @@ static uchar i2c_get_data (struct device_d *pdev, uchar *return_data, int len)
 		return_data++;
 		dev_dbg(pdev, "i2c_get_data data 0x%x\n",data);
 	}
-	printf("\n*\n");
 	writel(readl(pdev->map_base + I2C_CNTR) & ~(I2C_AAK | I2C_IFLG), pdev->map_base + I2C_CNTR);
 	while ((status & 0xff) != I2C_DATA_RECEIVE_NACK) {
 		udelay (I2C_DELAY);
