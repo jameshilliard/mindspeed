@@ -133,18 +133,25 @@ static uchar i2c_get_data (struct device_d *pdev, uchar *return_data, int len)
 
 	unsigned int data, status = 0;
 	int count = 0;
+	uint32_t ack_expected = I2C_DATA_RECEIVE_ACK;
 
 	while (len) {
+		count = 0;
 
-		/* Get and return the data */
-		writel(readl(pdev->map_base + I2C_CNTR) & ~I2C_IFLG, pdev->map_base + I2C_CNTR);
+		if (len > 1) {
+			/* more data to read, acknowledge the received byte */
+			writel(I2C_AAK, pdev->map_base + I2C_CNTR);
+                } else {
+			/* last byte, don't send acknowledge */
+			writel(0, pdev->map_base + I2C_CNTR);
+			ack_expected = I2C_DATA_RECEIVE_NACK;
+		}
 
 		udelay (I2C_DELAY * 5);
 
 		status = readl(pdev->map_base + I2C_STAT);
 		dev_dbg(pdev, "i2c_get_data len %d status 0x%x\n", len, status);
-		count++;
-		while ((status & 0xff) != I2C_DATA_RECEIVE_ACK) {
+		while ((status & 0xff) != ack_expected) {
 			udelay (I2C_DELAY * 10000);
 			if (count > 40) {
 				writel(I2C_STP, pdev->map_base + I2C_CNTR);	/*stop */
@@ -160,17 +167,6 @@ static uchar i2c_get_data (struct device_d *pdev, uchar *return_data, int len)
 		*return_data = (uchar) data;
 		return_data++;
 		dev_dbg(pdev, "i2c_get_data data 0x%x\n",data);
-	}
-	writel(readl(pdev->map_base + I2C_CNTR) & ~(I2C_AAK | I2C_IFLG), pdev->map_base + I2C_CNTR);
-	while ((status & 0xff) != I2C_DATA_RECEIVE_NACK) {
-		udelay (I2C_DELAY);
-		if (count > 200) {
-			writel(I2C_STP, pdev->map_base + I2C_CNTR);	/*stop */
-			return (status);
-		}
-		status = readl(pdev->map_base + I2C_STAT);
-		count++;
-		dev_dbg(pdev, "i2c_get_data I2C_AAK status 0x%x\n", status);
 	}
 	writel(I2C_STP, pdev->map_base + I2C_CNTR);	/* stop */
 
