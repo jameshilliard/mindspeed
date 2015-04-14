@@ -359,27 +359,20 @@ uchar i2c_write (struct device_d *pdev, uchar dev_addr, uchar * data, int len)
 
 static int i2c_c2k_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int num)
 {
-        unsigned int i;
+        int i;
         int result;
 
-        /* Start I2C transfer */
-        result = i2c_start(adapter->dev);
-        if (result)
-		goto fail0;
+	for (i = 0; i < num; i++) {
+		if (msgs[i].flags & I2C_M_RD)
+			result = i2c_read(adapter->dev, msgs[i].addr,
+					msgs[i].buf, msgs[i].len);
+		else
+			result = i2c_write(adapter->dev, msgs[i].addr,
+					msgs[i].buf, msgs[i].len);
 
-        /* read/write data */
-	i = num-1;
-        if (msgs[i].flags & I2C_M_RD)
-		result = i2c_read(adapter->dev, msgs[i].addr, msgs[i].buf, msgs[i].len);
-        else
-		result = i2c_write(adapter->dev, msgs->addr, msgs->buf, msgs->len);
-
-	if (result)
-                goto fail0;
-
-fail0:
-        /* Stop I2C transfer */
-	i2c_stop(adapter->dev);
+		if (result)
+			break;
+	}
 
 	return (result < 0) ? result : num;
 }
