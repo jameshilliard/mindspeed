@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <fs.h>
 #include <malloc.h>
+#include <board_id.h>
 
 #define OTP_KEY_SIZE_BYTES	256
 #define OTP_KEY_SIZE_BITS	(OTP_KEY_SIZE_BYTES * 8)
@@ -374,4 +375,52 @@ BAREBOX_CMD_START(print_otp_config)
 	.cmd		= do_print_otp_config,
 	.usage		= "print OTP config bytes",
 	BAREBOX_CMD_HELP(cmd_print_otp_config_help)
+BAREBOX_CMD_END
+
+static int do_set_otp_board_id(struct command *cmdtp, int argc,
+				char *argv[]) {
+	int board_id;
+	uint32_t board_id_otp;
+	uint8_t bit_array[32];
+
+	if (argc != 2)
+		return COMMAND_ERROR_USAGE;
+
+	board_id = simple_strtoul(argv[1], NULL, 0);
+
+	/* Writing the board ID is irreversible, verify the provided board ID
+	   matches the GPIO configuration */
+	if (board_id != get_board_id_gpio()) {
+		printf("Given board ID does not match GPIO board ID: %d\n",
+			get_board_id_gpio());
+		return 1;
+	}
+
+	if (board_id == OPTIMUS_BOARD_ID) {
+		board_id_otp = OPTIMUS_BOARD_ID_OTP;
+	} else if (board_id == SIDESWIPE_BOARD_ID) {
+		board_id_otp = SIDESWIPE_BOARD_ID_OTP;
+	} else if (board_id == SPACECAST_BOARD_ID) {
+		board_id_otp = SPACECAST_BOARD_ID_OTP;
+	} else {
+		printf("Unsupported board: %d\n", board_id);
+		return 1;
+	}
+
+	/* Write the key id to the OTP. */
+	_convert_to_bit_array((uint8_t *)&board_id_otp, 4, bit_array);
+	otp_write(OTP_OFFSET_BOARD_ID, bit_array, 32);
+
+	return 0;
+}
+
+static const __maybe_unused char cmd_set_otp_board_id_help[] =
+"Usage: set_otp_board_id <id>\n"
+"Set the board id in the OTP.\n"
+"WARNING: This cannot be undone!\n";
+
+BAREBOX_CMD_START(set_board_id)
+	.cmd		= do_set_otp_board_id,
+	.usage		= "set the device id in the OTP",
+	BAREBOX_CMD_HELP(cmd_set_otp_board_id_help)
 BAREBOX_CMD_END
