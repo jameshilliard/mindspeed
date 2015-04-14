@@ -173,58 +173,9 @@ static uchar i2c_get_data (struct device_d *pdev, uchar *return_data, int len)
 	return (0);
 }
 
-static uchar i2c_write_data (struct device_d *pdev, unsigned int *data, int len)
-{
-	unsigned int status;
-	int count = 0;
-	unsigned int temp;
-	unsigned int *temp_ptr = data;
-
-	while (len) {
-		temp = (unsigned int) (*temp_ptr);
-		writel(temp, pdev->map_base + I2C_DATA);
-		writel(readl(pdev->map_base + I2C_CNTR) & ~I2C_IFLG, pdev->map_base + I2C_CNTR);
-
-		udelay (I2C_DELAY);
-
-		status = readl(pdev->map_base + I2C_STAT);
-		count++;
-		while ((status & 0xff) != I2C_DATA_TRANSMIT_ACK) {
-			udelay (I2C_DELAY * 2000);
-			if (count > 20) {
-				writel(I2C_STP, pdev->map_base + I2C_CNTR);	/*stop */
-				dev_dbg(pdev, "i2c_write_data timeout  status 0x%x\n",status);
-				return (status);
-			}
-			status = readl(pdev->map_base + I2C_STAT);
-			dev_dbg(pdev, "i2c_write_data  status 0x%x\n",status);
-			count++;
-		}
-		len--;
-		temp_ptr++;
-	}
-
-/* Can't have the write issuing a stop command */
-/* it's wrong to have a stop bit in read stream or write stream */
-/* since we don't know if it's really the end of the command */
-/* or whether we have just send the device address + offset */
-/* we will push issuing the stop command off to the original */
-/* calling function */
-	/* set the interrupt bit in the control register */
-	writel(I2C_IFLG, pdev->map_base + I2C_CNTR);
-	udelay (I2C_DELAY * 10);
-	return (0);
-}
-
 /* created this function to get the i2c_write() */
 /* function working properly. */
 /* function to write bytes out on the i2c bus */
-/* this is identical to the function i2c_write_data() */
-/* except that it requires a buffer that is an */
-/* unsigned character array.  You can't use */
-/* i2c_write_data() to send an array of unsigned characters */
-/* since the byte of interest ends up on the wrong end of the bus */
-/* aah, the joys of big endian versus little endian! */
 /* */
 /* returns 0 = success */
 /*         anything other than zero is failure */
