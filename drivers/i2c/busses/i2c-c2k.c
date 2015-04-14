@@ -8,16 +8,23 @@
 #include <mach/comcerto-2000.h>
 #include <mach/i2c.h>
 
+#define DEFAULT_BUS_FREQ	100000
+
+static bool is_initialized = false;
+
 /* Assuming that there is only one master on the bus (us) */
 
-void i2c_init (struct device_d *pdev, int speed, int slaveaddr)
+static void i2c_init (struct device_d *pdev)
 {
 	unsigned int n, m, freq, margin, power;
 	unsigned int actualN = 0, actualM = 0;
 	unsigned int minMargin = 0xffffffff;
 	unsigned int control, status;
 	unsigned int tclk = CFG_TCLK;
-	unsigned int i2cFreq = speed;	/* 100000 max. Fast mode not supported */
+	unsigned int i2cFreq = DEFAULT_BUS_FREQ;
+	struct i2c_platform_data *pdata = pdev->platform_data;
+	if (pdata && pdata->bitrate)
+		i2cFreq = pdata->bitrate;
 
 	dev_dbg(pdev, "i2c_init\n");
 
@@ -57,6 +64,8 @@ void i2c_init (struct device_d *pdev, int speed, int slaveaddr)
 
 	status = readl(pdev->map_base + I2C_STAT);
 	control = readl(pdev->map_base + I2C_CNTR);
+
+	is_initialized = true;
 }
 
 static uchar i2c_start (struct device_d *pdev)
@@ -220,14 +229,6 @@ static uchar i2c_write_byte (struct device_d *pdev, unsigned char *data, int len
 uchar i2c_read (struct device_d *pdev, uchar dev_addr, uchar * data, int len)
 {
 	uchar status = 0;
-	struct i2c_platform_data *pdata;
-	int i2cFreq;
-
-	pdata = pdev->platform_data;
-	if (pdata && pdata->bitrate)
-		i2cFreq = pdata->bitrate;
-
-	i2c_init (pdev, i2cFreq, 0);	/* set the i2c frequency */
 
 	status = i2c_start (pdev);
 
@@ -267,14 +268,6 @@ void i2c_stop (struct device_d *pdev)
 uchar i2c_write (struct device_d *pdev, uchar dev_addr, uchar * data, int len)
 {
 	uchar status = 0;
-        struct i2c_platform_data *pdata;
-	int i2cFreq;
-
-	pdata = pdev->platform_data;
-	if (pdata && pdata->bitrate)
-		i2cFreq = pdata->bitrate;
-
-	i2c_init (pdev, i2cFreq, 0);	/* set the i2c frequency */
 
 	status = i2c_start (pdev);	/* send a start bit */
 
@@ -303,6 +296,10 @@ static int i2c_c2k_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int n
 {
         int i;
         int result;
+
+	if (!is_initialized) {
+		i2c_init(adapter->dev);
+	}
 
 	for (i = 0; i < num; i++) {
 		if (msgs[i].flags & I2C_M_RD)
