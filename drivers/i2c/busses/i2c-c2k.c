@@ -213,15 +213,6 @@ static uchar i2c_write_byte (struct device_d *pdev, unsigned char *data, int len
 		len--;
 		temp_ptr++;
 	}
-/* Can't have the write issuing a stop command */
-/* it's wrong to have a stop bit in read stream or write stream */
-/* since we don't know if it's really the end of the command */
-/* or whether we have just send the device address + offset */
-/* we will push issuing the stop command off to the original */
-/* calling function */
-	/* set the interrupt bit in the control register */
-	writel(I2C_IFLG, pdev->map_base + I2C_CNTR);
-	udelay (I2C_DELAY * 10);
 
 	return (0);
 }
