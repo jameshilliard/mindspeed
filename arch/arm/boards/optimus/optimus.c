@@ -50,13 +50,10 @@
 #include <mach/i2c.h>
 #include <mach/otp.h>
 #include <mach/ddr.h>
-#include "optimus.h"
+#include <board_id.h>
 
 #define PHY_DEVICE      "phy0"
 
-#define OPTIMUS_BOARD_ID		0
-#define SIDESWIPE_BOARD_ID		1
-#define SPACECAST_BOARD_ID		2
 #define SPACECAST_EMAC1_PHY_ADDR	1
 
 #ifdef CONFIG_SPI
@@ -448,4 +445,3 @@ int c2000_eth_board_init(int gemac_port)
 }
 
 device_initcall(c2000_device_init);
-

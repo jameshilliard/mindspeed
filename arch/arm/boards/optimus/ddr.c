@@ -4,7 +4,7 @@
 #include <asm/types.h>
 #include <mach/ddr.h>
 #include <mach/gpio.h>
-#include "optimus.h"
+#include <board_id.h>
 
 /* This array is called optimus_ddrc_cfg for historic reasons. */
 /* It applies to both Optimus and SpaceCast. */
