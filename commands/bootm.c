@@ -214,6 +214,7 @@ struct image_handle *map_image(const char *filename, int verify,
 	uint32_t total_image_len, sig_offset, verity_table_len;
 	uint8_t sb_header[SB_HEADER_LEN], verity_info[SB_INFO_LEN], *verity_table;
 	uint8_t hash[SHA1_SUM_LEN], sig[SB_SIG_LEN];
+	int board_id;
 
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
@@ -229,6 +230,8 @@ struct image_handle *map_image(const char *filename, int verify,
 		printf("Error: Cannot perform a secure boot of a legacy kernel image!\n");
 		goto err_out;
 	}
+
+	board_id = get_board_id();
 
 	if (!legacy_format) {
 		if (secure_boot) {
@@ -331,7 +334,7 @@ struct image_handle *map_image(const char *filename, int verify,
 				goto err_out;
 			}
 
-			if (rsa_get_public_key(OPTIMUS_BOARD_ID, &public_key) != 0) {
+			if (rsa_get_public_key(board_id, &public_key) != 0) {
 				printf("Could not get public key!\n");
 				goto err_out;
 			}

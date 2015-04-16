@@ -1,5 +1,4 @@
 #include <boot.h>
-#include <c2k_otp.h>
 #include <common.h>
 #include <command.h>
 #include <init.h>
@@ -134,6 +133,7 @@ static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	const struct rsa_public_key *public_key = NULL;
 	u8 *sig, hash[20];
 	u32 image_len, sig_offset;
+	int board_id;
 
 	image_len = _get_le_uint32(image_ptr);
 	if (image_len > max_image_len) {
@@ -154,7 +154,8 @@ static int _verify_image(u8 *image_ptr, u32 max_image_len) {
 	image_ptr += sig_offset;
 	sig = image_ptr;
 
-	if (rsa_get_public_key(OPTIMUS_BOARD_ID, &public_key) != 0) {
+	board_id = get_board_id();
+	if (rsa_get_public_key(board_id, &public_key) != 0) {
 		printf("ERROR: could not verify barebox image (no public key)\n");
 		return -1;
 	}
