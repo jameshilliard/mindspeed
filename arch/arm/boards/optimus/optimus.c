@@ -51,6 +51,7 @@
 #include <mach/otp.h>
 #include <mach/ddr.h>
 #include <board_id.h>
+#include <tpm_lite/tlcl.h>
 
 #define PHY_DEVICE      "phy0"
 
@@ -257,6 +258,10 @@ int get_board_id(void) {
 }
 EXPORT_SYMBOL(get_board_id)
 
+#ifdef	CONFIG_TPM
+uint32_t tpm_init(void);
+#endif
+
 static int c2000_device_init(void)
 {
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
@@ -419,6 +424,12 @@ static int c2000_device_init(void)
 		devfs_add_partition("nor0", 0x120000, 0x20000, PARTITION_FIXED, "env0");
 		protect_file("/dev/env0", 1);
 	}
+
+#ifdef	CONFIG_TPM
+	if (tpm_init() != TPM_SUCCESS) {
+		printf("TPM initialization failed\n");
+	}
+#endif
 #endif
 	return 0;
 }
