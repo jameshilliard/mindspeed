@@ -334,3 +334,21 @@ uint32_t tlcl_extend(int pcr_num, const uint8_t* in_digest,
 		       kPcrDigestLength);
 	return result;
 }
+
+uint32_t tlcl_read_pcr(int pcr_num, uint8_t* out_digest)
+{
+	struct s_tpm_pcr_read_cmd cmd;
+	uint8_t response[kTpmResponseHeaderLength + kPcrDigestLength];
+	uint32_t result;
+
+	memcpy(&cmd, &tpm_pcr_read_cmd, sizeof(cmd));
+	to_tpm_uint32(cmd.buffer + tpm_pcr_read_cmd.pcrNum, pcr_num);
+
+	result = tlcl_send_receive(cmd.buffer, response, sizeof(response));
+	if (result != TPM_SUCCESS)
+		return result;
+
+	memcpy(out_digest, response + kTpmResponseHeaderLength,
+		kPcrDigestLength);
+	return result;
+}

@@ -134,4 +134,9 @@ uint32_t tlcl_extend(int pcr_num, const uint8_t *in_digest,
  */
 uint32_t tlcl_get_permanent_flags(TPM_PERMANENT_FLAGS *pflags);
 
+/**
+ * Read a PCR
+ */
+uint32_t tlcl_read_pcr(int pcr_num, uint8_t* out_digest);
+
 #endif  /* TPM_LITE_TLCL_H_ */
