@@ -135,6 +135,11 @@ uint32_t tlcl_extend(int pcr_num, const uint8_t *in_digest,
 uint32_t tlcl_get_permanent_flags(TPM_PERMANENT_FLAGS *pflags);
 
 /**
+ * Get the entire set of stclear flags.
+ */
+uint32_t tlcl_get_stclear_flags(TPM_STCLEAR_FLAGS *sflags);
+
+/**
  * Read a PCR
  */
 uint32_t tlcl_read_pcr(int pcr_num, uint8_t* out_digest);

@@ -307,6 +307,21 @@ uint32_t tlcl_get_flags(uint8_t* disable, uint8_t* deactivated,
 	return result;
 }
 
+uint32_t tlcl_get_stclear_flags(TPM_STCLEAR_FLAGS *sflags)
+{
+	uint8_t response[TPM_LARGE_ENOUGH_COMMAND_SIZE];
+	uint32_t size;
+	uint32_t result = tlcl_send_receive(tpm_getstclearflags_cmd.buffer, response,
+	                                    sizeof(response));
+	if (result != TPM_SUCCESS)
+		return result;
+	from_tpm_uint32(response + kTpmResponseHeaderLength, &size);
+	assert(size == sizeof(TPM_STCLEAR_FLAGS));
+	memcpy(sflags, response + kTpmResponseHeaderLength + sizeof(size),
+	       sizeof(TPM_STCLEAR_FLAGS));
+	return result;
+}
+
 uint32_t tlcl_set_global_lock(void)
 {
 	uint32_t x;
