@@ -100,8 +100,10 @@ static uint32_t tlcl_send_receive_no_retry(const uint8_t* request,
          * (and possibly expected length from the response header).  See
          * crosbug.com/17017 */
 
-        VBDEBUG("TPM: command 0x%x returned 0x%x\n",
-        	tpm_command_code(request), result);
+	if (result != TPM_SUCCESS) {
+		VBDEBUG("TPM: command 0x%x returned 0x%x\n",
+			tpm_command_code(request), result);
+	}
 
         return result;
 }
