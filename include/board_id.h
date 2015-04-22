@@ -6,5 +6,6 @@
 #define SPACECAST_BOARD_ID	2
 
 int get_board_id(void);
+int get_board_id_gpio(void);
 
 #endif /* __BOARD_ID_H */

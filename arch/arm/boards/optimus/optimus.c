@@ -229,7 +229,7 @@ struct device_d csi_flash_dev = {
  * 0x<address>" from barebox. */
 int optimus_board_id = 0x9999999;
 
-int get_board_id(void) {
+int get_board_id_gpio(void) {
 	int board_id;
 	/* We determine the type of board by reading GPIO pins 57, 56 and 55
 	 * The bit patterns are defined as follows:
@@ -255,6 +255,11 @@ int get_board_id(void) {
 	optimus_board_id = board_id | 0xabcd0000;
 
 	return board_id;
+}
+EXPORT_SYMBOL(get_board_id_gpio)
+
+int get_board_id(void) {
+	return get_board_id_gpio();
 }
 EXPORT_SYMBOL(get_board_id)
 
