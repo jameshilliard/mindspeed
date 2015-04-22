@@ -31,16 +31,18 @@
 #define _RSA_VERIFY_H
 
 #include <common.h>
+#include <rsa_public_key.h>
 
 /**
  * rsa_verify() - Verifies a RSA PKCS1.5 signature against a hash.
  *
+ * @key:	The RSA public key
  * @sig:	The RSA signature
  * @sig_len:	The signature length
  * @hash:	The hash to compare against
  * @return:	0 if verified, -ve on error
  */
-int rsa_verify(uint8_t *sig, uint32_t sig_len, uint8_t hash[20]);
+int rsa_verify(const struct rsa_public_key * key, uint8_t *sig,
+	uint32_t sig_len, uint8_t hash[20]);
 
 #endif
-
