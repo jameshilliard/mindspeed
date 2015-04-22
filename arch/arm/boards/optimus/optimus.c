@@ -50,6 +50,8 @@
 #include <mach/i2c.h>
 #include <mach/otp.h>
 #include <mach/ddr.h>
+#include <c2k_otp.h>
+#include <secure_boot.h>
 #include <board_id.h>
 #include <tpm_lite/tlcl.h>
 
@@ -259,7 +261,52 @@ int get_board_id_gpio(void) {
 EXPORT_SYMBOL(get_board_id_gpio)
 
 int get_board_id(void) {
-	return get_board_id_gpio();
+	secure_boot_mode_t boot_mode = get_secure_boot_mode();
+	/* If the boot mode can't be determined assume it's a secure boot */
+	bool secure_boot = ((boot_mode == SECURE) || (boot_mode == UNKNOWN));
+
+	if (secure_boot) {
+		uint32_t board_id_otp = 0xFFFFFFFF;
+		if (otp_read(OTP_OFFSET_BOARD_ID, (uint8_t *)&board_id_otp,
+			sizeof(board_id_otp))) {
+			printf("Unable to read board ID from the OTP\n");
+			hang();
+		}
+
+		if (board_id_otp != 0) {
+			switch (board_id_otp) {
+			case OPTIMUS_BOARD_ID_OTP:
+				return OPTIMUS_BOARD_ID;
+
+			case SIDESWIPE_BOARD_ID_OTP:
+				return SIDESWIPE_BOARD_ID;
+
+			case SPACECAST_BOARD_ID_OTP:
+				return SPACECAST_BOARD_ID;
+
+			default:
+				printf("Invalid board ID (OTP): 0x%08x\n", board_id_otp);
+			}
+		} else {
+			/* The board ID in the OTP is unprogrammed. This can be
+			   the case on Optimus and Sideswipe devices which were
+			   deployed before the OTP board ID was introduced. Fall
+			   back to the GPIO pins but restrict boot to Optimus
+			   and Sideswipe */
+			int board_id = get_board_id_gpio();
+			if ((board_id == OPTIMUS_BOARD_ID) ||
+				(board_id == SIDESWIPE_BOARD_ID)) {
+				return board_id;
+			}
+
+			printf("Invalid board ID (GPIO): %d\n", board_id);
+		}
+
+		hang();
+		return -1;
+	} else  {
+		return get_board_id_gpio();
+	}
 }
 EXPORT_SYMBOL(get_board_id)
 

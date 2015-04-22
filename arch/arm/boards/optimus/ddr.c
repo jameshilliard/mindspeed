@@ -196,7 +196,7 @@ resource_size_t get_ddr_config_size(void) {
 }
 
 struct ddr_config get_ddr_config(void) {
-	int board_id = get_board_id();
+	int board_id = get_board_id_gpio();
 	if (board_id < ARRAY_SIZE(board_id_to_ddr_config))
 		return board_id_to_ddr_config[board_id];
 	else
