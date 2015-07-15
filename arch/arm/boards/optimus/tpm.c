@@ -35,17 +35,29 @@
 
 #define PCR_DIGEST_LENGTH	20
 
-#define SHA1_NON_SECURE_BOOT	0
-#define SHA1_SECURE_BOOT	1
+#define SHA1_NON_SECURE_BOOT		0
+#define SHA1_SECURE_BOOT		1
+#define SHA1_RECOVERY_MODE_NON_SECURE	2
+#define SHA1_RECOVERY_MODE_SECURE	3
 
-static const uint8_t bootmode_digests[2][PCR_DIGEST_LENGTH] = {
+extern int is_recovery_mode(void);
+
+static const uint8_t bootmode_digests[4][PCR_DIGEST_LENGTH] = {
 	/* non-secure boot [0, 0, 2] */
 	{0x1e, 0xf6, 0x24, 0x48, 0x2d, 0x62, 0x0e, 0x43, 0xe6, 0xd3,
 	 0x4d, 0xa1, 0xaf, 0xe4, 0x62, 0x67, 0xfc, 0x69, 0x5d, 0x9b},
 
 	/* secure boot [0, 0, 1] */
 	{0x25, 0x47, 0xcc, 0x73, 0x6e, 0x95, 0x1f, 0xa4, 0x91, 0x98,
-	 0x53, 0xc4, 0x3a, 0xe8, 0x90, 0x86, 0x1a, 0x3b, 0x32, 0x64}
+	 0x53, 0xc4, 0x3a, 0xe8, 0x90, 0x86, 0x1a, 0x3b, 0x32, 0x64},
+
+	/* recovery mode, non-secure [0, 1, 2] */
+	{0x0c, 0x7a, 0x62, 0x3f, 0xd2, 0xbb, 0xc0, 0x5b, 0x06, 0x42,
+	 0x3b, 0xe3, 0x59, 0xe4, 0x02, 0x1d, 0x36, 0xe7, 0x21, 0xad},
+
+	/* recovery mode, secure [0, 1, 1] */
+	{0xee, 0xe4, 0x47, 0xed, 0xc7, 0x9f, 0xea, 0x1c, 0xa7, 0xc7,
+	 0xd3, 0x4e, 0x46, 0x32, 0x61, 0xcd, 0xa4, 0xba, 0x33, 0x9e}
 };
 
 static const uint8_t sha256_gfsc100[PCR_DIGEST_LENGTH] = {
@@ -68,7 +80,7 @@ uint32_t tpm_init(void) {
 
 	result = tlcl_startup();
 	if ((result != TPM_SUCCESS) &&
-		(result != TPM_E_INVALID_POSTINIT)) {
+		(is_recovery_mode() || (result != TPM_E_INVALID_POSTINIT))) {
 		/* Invalid postinit indicates that TPM_Startup has already been
 		   executed. This situation occurs on reboots on the GFSC100
 		   platform because a reboot does not powercycle the TPM */
@@ -80,30 +92,49 @@ uint32_t tpm_init(void) {
 	   functions will return TPM_NEEDS_SELFTEST otherwise */
 	RETURN_ON_FAILURE(tlcl_continue_self_test());
 
-	RETURN_ON_FAILURE(tlcl_get_flags(&disable, &deactivated, NULL));
-	if (disable || deactivated) {
-		printk(KERN_DEBUG "TPM: disabled (%d) or deactivated (%d). "
-			"Fixing...\n", disable, deactivated);
-		RETURN_ON_FAILURE(tlcl_assert_physical_presence());
-		RETURN_ON_FAILURE(tlcl_set_enable());
-		RETURN_ON_FAILURE(tlcl_set_deactivated(0));
-	}
+	if (!is_recovery_mode()) {
+		RETURN_ON_FAILURE(tlcl_get_flags(&disable, &deactivated, NULL));
+		if (disable || deactivated) {
+			printk(KERN_DEBUG "TPM: disabled (%d) or deactivated (%d). "
+				"Fixing...\n", disable, deactivated);
+			RETURN_ON_FAILURE(tlcl_assert_physical_presence());
+			RETURN_ON_FAILURE(tlcl_set_enable());
+			RETURN_ON_FAILURE(tlcl_set_deactivated(0));
+		}
 
-	RETURN_ON_FAILURE(tlcl_get_stclear_flags(&sflags));
-	if (sflags.deactivated) {
-		printk(KERN_DEBUG "TPM: Must reboot to re-enable\n");
-		return TPM_E_MUST_REBOOT;
-	}
+		RETURN_ON_FAILURE(tlcl_get_stclear_flags(&sflags));
+		if (sflags.deactivated) {
+			printk(KERN_DEBUG "TPM: Must reboot to re-enable\n");
+			return TPM_E_MUST_REBOOT;
+		}
 
-	RETURN_ON_FAILURE(tlcl_read_pcr(0, pcr_value));
-	if (!memcmp(pcr_value, PCR_uninitialized, PCR_DIGEST_LENGTH)) {
-		/* PCR0 not initialized, extend it with the boot mode */
+		RETURN_ON_FAILURE(tlcl_read_pcr(0, pcr_value));
+		if (!memcmp(pcr_value, PCR_uninitialized, PCR_DIGEST_LENGTH)) {
+			/* PCR0 not initialized, extend it with the boot mode */
+			const uint8_t *digest;
+
+			if (get_secure_boot_mode() == SECURE) {
+				digest = bootmode_digests[SHA1_SECURE_BOOT];
+			} else {
+				digest = bootmode_digests[SHA1_NON_SECURE_BOOT];
+			}
+
+			RETURN_ON_FAILURE(tlcl_extend(0, digest, NULL));
+		}
+	} else {
 		const uint8_t *digest;
 
+		printk(KERN_DEBUG "TPM: Clearing\n");
+		RETURN_ON_FAILURE(tlcl_assert_physical_presence());
+		RETURN_ON_FAILURE(tlcl_force_clear());
+
+		RETURN_ON_FAILURE(tlcl_set_enable());
+		RETURN_ON_FAILURE(tlcl_set_deactivated(0));
+
 		if (get_secure_boot_mode() == SECURE) {
-			digest = bootmode_digests[SHA1_SECURE_BOOT];
+			digest = bootmode_digests[SHA1_RECOVERY_MODE_SECURE];
 		} else {
-			digest = bootmode_digests[SHA1_NON_SECURE_BOOT];
+			digest = bootmode_digests[SHA1_RECOVERY_MODE_NON_SECURE];
 		}
 
 		RETURN_ON_FAILURE(tlcl_extend(0, digest, NULL));

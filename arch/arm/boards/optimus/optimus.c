@@ -512,6 +512,12 @@ static int c2000_device_init(void)
 #ifdef	CONFIG_TPM
 	if (tpm_init() != TPM_SUCCESS) {
 		printf("TPM initialization failed\n");
+		if (recovery_mode) {
+			printf("Can't continue boot to recovery mode\nPower cycle needed\n");
+			while (1) {
+				mdelay(100);
+			}
+		}
 	}
 #endif
 #endif
