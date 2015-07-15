@@ -64,6 +64,8 @@
 #ifdef CONFIG_SPI
 //Legacy spi
 
+static bool recovery_mode = false;
+
 static int c2k_spi_cs[4] = {0};
 
 static struct c2k_spi_master c2k_spi_1_data = {
@@ -314,6 +316,28 @@ EXPORT_SYMBOL(get_board_id)
 uint32_t tpm_init(void);
 #endif
 
+static int is_factory_reset_pressed(void) {
+	return !comcerto_gpio_read(GPIO_6);
+}
+
+static int is_factory_reset_pressed_continuously(int period_ms) {
+	int i;
+
+	for (i = 0; i < period_ms / 10; i++) {
+		if (!is_factory_reset_pressed()) {
+			return 0;
+		}
+
+		mdelay(10);
+	}
+
+	return 1;
+}
+
+int is_recovery_mode() {
+	return recovery_mode;
+}
+
 static int c2000_device_init(void)
 {
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
@@ -475,6 +499,14 @@ static int c2000_device_init(void)
 		printf("Using ENV from NOR Flash.\n");
 		devfs_add_partition("nor0", 0x120000, 0x20000, PARTITION_FIXED, "env0");
 		protect_file("/dev/env0", 1);
+	}
+
+	if (get_board_id() == SPACECAST_BOARD_ID) {
+		if (is_factory_reset_pressed()) {
+			printf("Factory reset button is pressed, checking for recovery mode ...\n");
+			recovery_mode = is_factory_reset_pressed_continuously(5000);
+			printf("Recovery mode is%s active\n", (recovery_mode? "" : " not"));
+		}
 	}
 
 #ifdef	CONFIG_TPM
