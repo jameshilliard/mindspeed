@@ -40,23 +40,27 @@ echo
 echo -n "Hit Ctrl-C to stop autoboot: "
 timeout -c $autoboot_timeout
 if [ $? = 0 ]; then
-	boot
+	if [ x${recovery_mode} != x1 ]; then
+		boot
 
-	# If we reach here, the kernel has failed to boot. Try the other kernel.
-	if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
-		kernpart=kernel0
-		rootpart=rootfs0
+		# If we reach here, the kernel has failed to boot. Try the other kernel.
+		if [ x$HNV_ACTIVATED_KERNEL_NAME = xkernel1 ]; then
+			kernpart=kernel0
+			rootpart=rootfs0
+		else
+			kernpart=kernel1
+			rootpart=rootfs1
+		fi
+		echo
+		echo "ERROR: Unable to boot $HNV_ACTIVATED_KERNEL_NAME!
+			Attempting to boot $kernpart instead."
+		echo
+
+		boot
+		echo 'Autoboot failed.'
 	else
-		kernpart=kernel1
-		rootpart=rootfs1
+		boot_recovery
 	fi
-	echo
-	echo "ERROR: Unable to boot $HNV_ACTIVATED_KERNEL_NAME!
-		Attempting to boot $kernpart instead."
-	echo
-
-	boot
-	echo 'Autoboot failed.'
 fi
 
 echo

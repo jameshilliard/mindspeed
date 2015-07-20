@@ -1,0 +1,51 @@
+#!/bin/sh
+
+if [ -f /env/bin/pre-boot ]; then
+	. /env/bin/pre-boot || exit
+fi
+
+. /default/config
+
+mtdparts="${nor_device}:${nor_parts}"
+bootargs="${bootargs} mtdparts=${mtdparts}"
+bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr}"
+
+printenv
+
+gpio_reg=0x90470000
+led_blue=0x0800D000
+led_red=0x0800E000
+led_purple=0x0800F000
+led_off=0x0800C000
+
+mw ${gpio_reg} ${led_purple}
+dhcp
+
+while true; do
+	mw ${gpio_reg} ${led_blue}
+	tftp gfsc100/recovery.img
+	if [ "$?" = "0" ]; then
+		mw ${gpio_reg} ${led_red}
+		bootm recovery.img
+
+		# The image is invalid, blink red until power is unplugged
+		while true; do
+			for st in ${led_off} ${led_red}; do
+				mw ${gpio_reg} ${st}
+				msleep 250
+			done
+		done
+	else
+		# TFTP failed, blink blue for 2s
+		for i in 0 1 2 3; do
+			for st in ${led_off} ${led_blue}; do
+				mw ${gpio_reg} ${st}
+				msleep 250
+			done
+		done
+
+                # Switch the LED off for 2s, then try again
+		mw ${gpio_reg} ${led_off}
+		msleep 2000
+	fi
+done
