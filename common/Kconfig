@@ -78,6 +78,7 @@ config FORCE_KERNEL_AUTH
 
 config DEVELOPER_BAREBOX
 	depends on COMCERTO_BOOTLOADER
+	select DRIVER_SERIAL_FAST_UART
 	bool "Enable developer barebox build"
 	help
 		A developer barebox build skips most of the production setup;
