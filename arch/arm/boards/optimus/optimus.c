@@ -54,6 +54,7 @@
 #include <secure_boot.h>
 #include <board_id.h>
 #include <tpm_lite/tlcl.h>
+#include <environment.h>
 
 #define PHY_DEVICE      "phy0"
 
@@ -501,12 +502,26 @@ static int c2000_device_init(void)
 		protect_file("/dev/env0", 1);
 	}
 
+#ifdef  CONFIG_DEVELOPER_BAREBOX
+	setenv("dev_mode", "1");
+#else
+	setenv("dev_mode", "0");
+#endif
+	export("dev_mode");
+
 	if (get_board_id() == SPACECAST_BOARD_ID) {
 		if (is_factory_reset_pressed()) {
 			printf("Factory reset button is pressed, checking for recovery mode ...\n");
 			recovery_mode = is_factory_reset_pressed_continuously(5000);
 			printf("Recovery mode is%s active\n", (recovery_mode? "" : " not"));
 		}
+
+		if (recovery_mode) {
+			setenv("recovery_mode", "1");
+		} else {
+			setenv("recovery_mode", "0");
+		}
+		export("recovery_mode");
 	}
 
 #ifdef	CONFIG_TPM
