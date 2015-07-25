@@ -55,6 +55,7 @@
 #include <board_id.h>
 #include <tpm_lite/tlcl.h>
 #include <environment.h>
+#include <recovery.h>
 
 #define PHY_DEVICE      "phy0"
 

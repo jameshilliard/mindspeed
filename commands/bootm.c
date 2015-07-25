@@ -49,6 +49,7 @@
 #include <secure_boot.h>
 #include <antirebootloop.h>
 #include <board_id.h>
+#include <recovery.h>
 
 #ifdef CONFIG_NAND_COMCERTO_ECC_HW_BCH
 extern uint32_t temp_nand_ecc_errors[];
@@ -334,9 +335,16 @@ struct image_handle *map_image(const char *filename, int verify,
 				goto err_out;
 			}
 
-			if (rsa_get_public_key(board_id, &public_key) != 0) {
-				printf("Could not get public key!\n");
-				goto err_out;
+			if (!is_recovery_mode()) {
+				if (rsa_get_public_key(board_id, &public_key) != 0) {
+					printf("Could not get public key!\n");
+					goto err_out;
+				}
+			} else {
+				if (rsa_get_recovery_key(board_id, &public_key) != 0) {
+					printf("Could not get public key!\n");
+					goto err_out;
+				}
 			}
 
 			if (rsa_verify(public_key, sig, SB_SIG_LEN, hash) != 0) {

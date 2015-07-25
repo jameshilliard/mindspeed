@@ -19,4 +19,8 @@ struct rsa_public_key {
 
 int rsa_get_public_key(int board_id, const struct rsa_public_key **key);
 
+#ifdef CONFIG_COMCERTO_BOOTLOADER
+int rsa_get_recovery_key(int board_id, const struct rsa_public_key **key);
+#endif
+
 #endif
