@@ -61,10 +61,10 @@
 
 #define SPACECAST_TPM_I2C_ADDR		0x20
 
+static bool recovery_mode = false;
+
 #ifdef CONFIG_SPI
 //Legacy spi
-
-static bool recovery_mode = false;
 
 static int c2k_spi_cs[4] = {0};
 
@@ -334,7 +334,7 @@ static int is_factory_reset_pressed_continuously(int period_ms) {
 	return 1;
 }
 
-int is_recovery_mode() {
+int is_recovery_mode(void) {
 	return recovery_mode;
 }
 
