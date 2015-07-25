@@ -11,7 +11,11 @@ nand_parts="8M(reserved0),32M(kernel0),32M(kernel1),288M(rootfs0),288M(rootfs1),
 nor_parts="128k(uloader)ro,512k(loader0)ro,512k(loader1)ro,128k(env),2M(hnvram),-(norreserved0)"
 nor_device="comcertoflash.0"
 
-autoboot_timeout=2
+if [ x${dev_mode} = x0 ]; then
+	autoboot_timeout=0
+else
+	autoboot_timeout=2
+fi
 
 bootargs="console=ttyS0,115200n8"
 
