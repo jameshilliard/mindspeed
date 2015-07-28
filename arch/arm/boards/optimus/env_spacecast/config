@@ -10,7 +10,9 @@ nor_device="comcertoflash.0"
 
 autoboot_timeout=2
 
-bootargs="console=ttyS0,115200n8"
+if [ x${dev_mode} = x1 ] || [ x${recovery_mode} = x1 ]; then
+	bootargs="console=ttyS0,115200n8"
+fi
 
 if [ -f /env/config.local ]; then
 	. /env/config.local
