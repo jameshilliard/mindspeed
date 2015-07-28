@@ -252,6 +252,9 @@ static struct ddr_config board_id_to_ddr_config[] = {
 	/* Nanya NT5CB128M16FP-DI, 533MHz, 32bit, NoECC */
 	{sideswipe_ddr_phy_cfg, sideswipe_ddrc_cfg, SZ_512M, "Sideswipe"},
 	{optimus_ddr_phy_cfg, spacecast_ddrc_cfg, SZ_1G, "SpaceCast"},
+	{0, 0, 0, "Unknown 3"},
+	{optimus_ddr_phy_cfg, optimus_ddrc_cfg, SZ_1G, "Optimus Prime"},
+	{sideswipe_ddr_phy_cfg, sideswipe_ddrc_cfg, SZ_512M, "Sideswipe Prime"},
 };
 
 static struct ddr_config bad_board_id_ddr_config = {0, 0, 0, "Unknown"};
