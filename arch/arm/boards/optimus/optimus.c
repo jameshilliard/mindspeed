@@ -319,6 +319,14 @@ EXPORT_SYMBOL(get_board_id)
 uint32_t tpm_init(void);
 #endif
 
+static void gpio_toggle(unsigned int gpiomask) {
+	if (comcerto_gpio_read(gpiomask)) {
+		comcerto_gpio_set_0(gpiomask);
+	} else {
+		comcerto_gpio_set_1(gpiomask);
+	}
+}
+
 static int is_factory_reset_pressed(void) {
 	return !comcerto_gpio_read(GPIO_6);
 }
@@ -329,6 +337,21 @@ static int is_factory_reset_pressed_continuously(int period_ms) {
 	for (i = 0; i < period_ms / 10; i++) {
 		if (!is_factory_reset_pressed()) {
 			return 0;
+		}
+
+		// Blink red LED slowly
+		if (i % 50 == 0) {
+			gpio_toggle(GPIO_RED_LED);
+		}
+
+		mdelay(10);
+	}
+
+	// Increase blinking frequency of the LED to indicate that the button can be
+	// released
+	for (i = 0; is_factory_reset_pressed(); i++) {
+		if (i % 20 == 0) {
+			gpio_toggle(GPIO_RED_LED);
 		}
 
 		mdelay(10);
@@ -516,6 +539,12 @@ static int c2000_device_init(void)
 			printf("Factory reset button is pressed, checking for recovery mode ...\n");
 			recovery_mode = is_factory_reset_pressed_continuously(5000);
 			printf("Recovery mode is%s active\n", (recovery_mode? "" : " not"));
+
+			if (!recovery_mode) {
+				comcerto_gpio_set_1(GPIO_RED_LED);
+			} else {
+				comcerto_gpio_set_0(GPIO_RED_LED);
+			}
 		}
 
 		if (recovery_mode) {
