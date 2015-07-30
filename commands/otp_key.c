@@ -402,6 +402,10 @@ static int do_set_otp_board_id(struct command *cmdtp, int argc,
 		board_id_otp = SIDESWIPE_BOARD_ID_OTP;
 	} else if (board_id == SPACECAST_BOARD_ID) {
 		board_id_otp = SPACECAST_BOARD_ID_OTP;
+	} else if (board_id == OPTIMUS_PRIME_BOARD_ID) {
+		board_id_otp = OPTIMUS_PRIME_BOARD_ID_OTP;
+	} else if (board_id == SIDESWIPE_PRIME_BOARD_ID) {
+		board_id_otp = SIDESWIPE_PRIME_BOARD_ID_OTP;
 	} else {
 		printf("Unsupported board: %d\n", board_id);
 		return 1;

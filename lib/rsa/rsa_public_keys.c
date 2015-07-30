@@ -9,6 +9,9 @@ static int board_id_to_key_index[] = {
 	0, /* OPTIMUS_BOARD_ID */
 	0, /* SIDESWIPE_BOARD_ID */
 	1, /* SPACECAST_BOARD_ID */
+	-1, /* UNASSIGNED_BOARD_ID */
+	0, /* OPTIMUS_PRIME_BOARD_ID */
+	0, /* SIDESWIPE_PRIME_BOARD_ID */
 };
 
 /*

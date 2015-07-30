@@ -289,6 +289,12 @@ int get_board_id(void) {
 			case SPACECAST_BOARD_ID_OTP:
 				return SPACECAST_BOARD_ID;
 
+			case OPTIMUS_PRIME_BOARD_ID_OTP:
+				return OPTIMUS_PRIME_BOARD_ID;
+
+			case SIDESWIPE_PRIME_BOARD_ID_OTP:
+				return SIDESWIPE_PRIME_BOARD_ID;
+
 			default:
 				printf("Invalid board ID (OTP): 0x%08x\n", board_id_otp);
 			}
