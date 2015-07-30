@@ -36,6 +36,8 @@
 #include <asm/hardware.h>
 #include <asm/io.h>
 
+#include "../arch/arm/boards/optimus/leds.h"
+
 #define OTP_KEY_SIZE_BYTES	256
 #define OTP_HEADER_OFFSET_BITS	32
 
@@ -59,28 +61,28 @@ static void _dump_key(char *key_name, uint8_t *key, unsigned int key_size) {
 }
 
 static void flash_led_forever(void) {
-	/* Turn off both blue (GPIO_12) and red (GPIO_13) leds to start. */
-	comcerto_gpio_set_0(GPIO_12);
-	comcerto_gpio_set_0(GPIO_13);
+	/* Turn off both blue and red leds to start. */
+	comcerto_gpio_set_0(GPIO_BLUE_LED);
+	comcerto_gpio_set_0(GPIO_RED_LED);
 
 	/* Flash the red LED continuously. */
 	while (true) {
 		mdelay(LED_BLINK_DELAY_MILLISECONDS);
-		comcerto_gpio_set_1(GPIO_13);
+		comcerto_gpio_set_1(GPIO_RED_LED);
 		if (ctrlc()) {
 			break;
 		}
 
 		mdelay(LED_BLINK_DELAY_MILLISECONDS);
-		comcerto_gpio_set_0(GPIO_13);
+		comcerto_gpio_set_0(GPIO_RED_LED);
 		if (ctrlc()) {
 			break;
 		}
 	}
 
 	/* Reset to barebox norm: red on, blue off. */
-	comcerto_gpio_set_0(GPIO_12);
-	comcerto_gpio_set_1(GPIO_13);
+	comcerto_gpio_set_0(GPIO_BLUE_LED);
+	comcerto_gpio_set_1(GPIO_RED_LED);
 }
 
 /*
@@ -190,4 +192,3 @@ BAREBOX_CMD_START(otp_stability_test)
 	.usage		= "perform OTP stability test",
 	BAREBOX_CMD_HELP(cmd_otp_stability_test_help)
 BAREBOX_CMD_END
-

@@ -56,6 +56,7 @@
 #include <tpm_lite/tlcl.h>
 #include <environment.h>
 #include <recovery.h>
+#include "leds.h"
 
 #define PHY_DEVICE      "phy0"
 
@@ -439,10 +440,10 @@ static int c2000_device_init(void)
 	 * GPIO 48: Power enable for high power wifi 11AC 4.2V PA, needs to be
 	 *          set high
 	 */
-	comcerto_gpio_enable_output(GPIO_12|GPIO_13);
+	comcerto_gpio_enable_output(GPIO_BLUE_LED|GPIO_RED_LED);
 	/* Turn blue LED off, red LED on, to indicate the uloader is running. */
-	comcerto_gpio_set_0(GPIO_12);
-	comcerto_gpio_set_1(GPIO_13);
+	comcerto_gpio_set_0(GPIO_BLUE_LED);
+	comcerto_gpio_set_1(GPIO_RED_LED);
 
 	comcerto_gpio_enable_output(GPIO_14|GPIO_15);
 	comcerto_gpio_set_1(GPIO_14|GPIO_15);
@@ -471,8 +472,8 @@ static int c2000_device_init(void)
 #endif
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	/* Turn blue LED off, red LED on, to indicate the bootloader is running. */
-	comcerto_gpio_set_0(GPIO_12);
-	comcerto_gpio_set_1(GPIO_13);
+	comcerto_gpio_set_0(GPIO_BLUE_LED);
+	comcerto_gpio_set_1(GPIO_RED_LED);
 #endif
 
 	sdram_dev.size = get_ddr_config_size();
