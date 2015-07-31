@@ -497,10 +497,10 @@ static int c2000_device_init(void)
 	writel(readl(COMCERTO_GPIO_63_32_OE_REG) | 0xFFFF << (44-32), COMCERTO_GPIO_63_32_OE_REG);
 	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 0xFFFF << (44-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
 
-	/* Set GPIO[48] direction to output */
-	writel(readl(COMCERTO_GPIO_63_32_OE_REG) & ~(1 << (48-32)), COMCERTO_GPIO_63_32_OE_REG);
 	/* Set GPIO[48] to high */
 	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_OUTPUT_REG);
+	/* Set GPIO[48] direction to output */
+	writel(readl(COMCERTO_GPIO_63_32_OE_REG) & ~(1 << (48-32)), COMCERTO_GPIO_63_32_OE_REG);
 #endif
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	/* Turn blue LED off, red LED on, to indicate the bootloader is running. */
