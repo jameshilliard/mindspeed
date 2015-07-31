@@ -467,6 +467,9 @@ static int c2000_device_init(void)
 	 * GPIO 15: USB power switch enable, active high
 	 * GPIO 48: Power enable for high power wifi 11AC 4.2V PA, needs to be
 	 *          set high
+	 * GPIO 49: POE_ACTIVE. GPIO input. Lets software read PoE status.
+	 * GPIO 50: POE_RESET needs to be low for PoE circuit to provide
+	 *          power.
 	 */
 	comcerto_gpio_enable_output(GPIO_BLUE_LED|GPIO_RED_LED);
 	/* Turn blue LED off, red LED on, to indicate the uloader is running. */
@@ -501,6 +504,14 @@ static int c2000_device_init(void)
 	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_OUTPUT_REG);
 	/* Set GPIO[48] direction to output */
 	writel(readl(COMCERTO_GPIO_63_32_OE_REG) & ~(1 << (48-32)), COMCERTO_GPIO_63_32_OE_REG);
+
+	/* GPIO 49 has already been turned into an input as part of the
+	 * operation where we turned GPIO 44 through GPIO 59 into inputs.  See
+	 * above. */
+	/* Set GPIO[50] to low */
+	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) & ~(1 << (50-32)), COMCERTO_GPIO_63_32_OUTPUT_REG);
+	/* Set GPIO[50] direction to output */
+	writel(readl(COMCERTO_GPIO_63_32_OE_REG) & ~(1 << (50-32)), COMCERTO_GPIO_63_32_OE_REG);
 #endif
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	/* Turn blue LED off, red LED on, to indicate the bootloader is running. */
