@@ -488,9 +488,17 @@ static int c2000_device_init(void)
 	 */
 	writel(readl(COMCERTO_GPIO_MISC_PIN_SELECT_REG) | 2 << 4, COMCERTO_GPIO_MISC_PIN_SELECT_REG);
 
-	/* GPIO[48] and CORESIGHT_D[4] are muxed on the same pin. Set pin
-	 * Select Register to select GPIO[48]. */
-	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
+	/* GPIO 44 through GPIO 59 are muxed with CORESIGHT_D[0..15]. Since
+	 * none of our boards is using Coresight, we might just turn all these
+	 * 16 pins into GPIO pins. Before we can safely do so, we have to turn
+	 * all these pins into input pins to avoid short circuits. A one bit in
+	 * OE_REG actually means input pin, a cleared bit in OE_REG means
+	 * output pin. */
+	writel(readl(COMCERTO_GPIO_63_32_OE_REG) | 0xFFFF << (44-32), COMCERTO_GPIO_63_32_OE_REG);
+	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 0xFFFF << (44-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
+
+	/* Set GPIO[48] direction to output */
+	writel(readl(COMCERTO_GPIO_63_32_OE_REG) & ~(1 << (48-32)), COMCERTO_GPIO_63_32_OE_REG);
 	/* Set GPIO[48] to high */
 	writel(readl(COMCERTO_GPIO_63_32_OUTPUT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_OUTPUT_REG);
 #endif
