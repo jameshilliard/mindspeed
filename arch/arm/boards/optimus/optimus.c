@@ -465,7 +465,6 @@ static int c2000_device_init(void)
 	 * GPIO 13: system red LED
 	 * GPIO 14: AR8337 reset, active low
 	 * GPIO 15: USB power switch enable, active high
-	 * GPIO 44: Power Over Ethernet, needs to be set low
 	 * GPIO 48: Power enable for high power wifi 11AC 4.2V PA, needs to be
 	 *          set high
 	 */
@@ -489,10 +488,6 @@ static int c2000_device_init(void)
 	 */
 	writel(readl(COMCERTO_GPIO_MISC_PIN_SELECT_REG) | 2 << 4, COMCERTO_GPIO_MISC_PIN_SELECT_REG);
 
-	/* GPIO[44] and CORESIGHT_D[0] are muxed on the same pin. Set pin
-	 * Select Register to select GPIO[44].  Pin Output Register is 0 by
-	 * default. */
-	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(44-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
 	/* GPIO[48] and CORESIGHT_D[4] are muxed on the same pin. Set pin
 	 * Select Register to select GPIO[48]. */
 	writel(readl(COMCERTO_GPIO_63_32_PIN_SELECT_REG) | 1<<(48-32), COMCERTO_GPIO_63_32_PIN_SELECT_REG);
