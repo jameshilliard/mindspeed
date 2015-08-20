@@ -34,6 +34,18 @@ if AUTH
 config RSA_VERIFY
 	bool "RSA_VERIFY"
 
+choice
+	prompt "Select the RSA key set"
+	default RSA_KEY_SET_DEFAULT
+
+config RSA_KEY_SET_DEFAULT
+	bool "Default keys"
+
+config RSA_KEY_SET_SPACECAST_PVT
+	bool "SpaceCast PVT keys"
+
+endchoice
+
 endif
 
 config GENERIC_FIND_NEXT_BIT
