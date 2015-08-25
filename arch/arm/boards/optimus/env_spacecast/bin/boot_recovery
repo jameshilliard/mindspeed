@@ -8,7 +8,7 @@ fi
 
 mtdparts="${nor_device}:${nor_parts}"
 bootargs="${bootargs} mtdparts=${mtdparts}"
-bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr}"
+bootargs="${bootargs} mac_addr=${eth0.ethaddr},${eth1.ethaddr},${eth2.ethaddr} login=1"
 
 printenv
 
