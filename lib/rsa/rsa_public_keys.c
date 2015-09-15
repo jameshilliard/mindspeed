@@ -3,8 +3,6 @@
 #include <rsa_public_key.h>
 #include <board_id.h>
 
-#define MAX_BOARD_ID	SPACECAST_BOARD_ID
-
 static int board_id_to_key_index[] = {
 	0, /* OPTIMUS_BOARD_ID */
 	0, /* SIDESWIPE_BOARD_ID */
@@ -254,7 +252,8 @@ static const struct rsa_public_key recovery_keys[] = {
 #endif
 
 static int get_key_id(int board_id) {
-	if ((board_id < 0) || (board_id > MAX_BOARD_ID)) {
+	if ((board_id < 0) ||
+			(board_id >= ARRAY_SIZE(board_id_to_key_index))) {
 		printf("Invalid board ID: %d\n", board_id);
 		return -1;
 	}
