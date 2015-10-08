@@ -75,12 +75,10 @@ for n in $binaries/uloader_unsigned_*.bin; do
 done
 type=barebox
 for n in $binaries/barebox_unsigned_*.bin; do
-	if [[ "$n" == *"_release"* ]] || [ "$target" != "spacecast" ]; then
-		signed=$(echo $n | sed -e 's/_unsigned_/_signed_/')
-		blaze run -- //isp/fiber/drm:code_sign_tool sign-image $n \
-		  --image_type=$type --outfile=$signed --keystore_config_id=$keystore_id \
-		  --key_suffix=$key_suffix
-	fi
+	signed=$(echo $n | sed -e 's/_unsigned_/_signed_/')
+	blaze run -- //isp/fiber/drm:code_sign_tool sign-image $n \
+	  --image_type=$type --outfile=$signed --keystore_config_id=$keystore_id \
+	  --key_suffix=$key_suffix
 done
 
 blaze --batch run //isp/fiber/drm:drm_keystore_client -- \
