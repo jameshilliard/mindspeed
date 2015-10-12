@@ -375,6 +375,10 @@ static int c2000_device_init(void)
 #ifdef	CONFIG_COMCERTO_BOOTLOADER
 	u32 bootopt;
 #endif
+#ifdef	CONFIG_TPM
+        uint32_t rc;
+#endif
+
 	int clk = HAL_get_axi_clk(); // Get AXI bus freq in MHz
 	serial_plat.clock = clk * 1000 * 1000;
 	register_device(&fast_uart_device);
@@ -576,12 +580,17 @@ static int c2000_device_init(void)
 	}
 
 #ifdef	CONFIG_TPM
-	if (tpm_init() != TPM_SUCCESS) {
+	rc = tpm_init();
+	if (rc != TPM_SUCCESS) {
 		printf("TPM initialization failed\n");
-		if (recovery_mode) {
-			printf("Can't continue boot to recovery mode\nPower cycle needed\n");
+
+		if ((rc == TPM_E_MUST_REBOOT) ||
+			recovery_mode) {
+			printf("Device must be power cycled\n");
 			while (1) {
-				mdelay(100);
+				// Blink red LED
+				gpio_toggle(GPIO_RED_LED);
+				mdelay(200);
 			}
 		}
 	}
