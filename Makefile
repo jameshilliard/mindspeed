@@ -794,7 +794,9 @@ localver = $(subst $(space),, \
 # checks as needed.
 ifdef CONFIG_LOCALVERSION_AUTO
 	_localver-auto = $(shell $(CONFIG_SHELL) \
-	                  $(srctree)/scripts/setlocalversion $(srctree))
+			  $(srctree)/scripts/setlocalversion \
+			  -m $(CONFIG_LOCALVERSION_AUTO_GIT_TAG_GLOB) \
+			  $(srctree))
 	localver-auto  = $(LOCALVERSION)$(_localver-auto)
 endif
 

@@ -62,6 +62,21 @@ config LOCALVERSION_AUTO
 
 	  which is done within the script "scripts/setlocalversion".)
 
+config LOCALVERSION_AUTO_GIT_TAG_GLOB
+	depends on LOCALVERSION_AUTO
+	string "Only consider git tags for version information that match glob pattern"
+	help
+	  The script "scripts/setlocalversion" uses the command "git describe" to
+	  look for a git tag and appends it to localversion. This option allows us
+	  to pass a "--match" parameter to "git describe". The git man page describes
+	  the parameter like this: "Only consider tags matching the given glob(7)
+	  pattern,"
+
+	  Without this parameter, "git describe" returns
+	  "spacecast-3.8-6-gafe9d1f" which might be confusing if we are building
+	  an image for Google Fiber. To avoid this, we can pass "--match gfiber*"
+	  into "git describe" and we will get "gfiber-46-pre3-6-gafe9d1f".
+
 config BOARDINFO
 	string
 

@@ -6,13 +6,25 @@ usage() {
 	exit 1
 }
 
+while getopts "m:" opt; do
+	case $opt in
+		m)
+			LOCALVERSION_AUTO_GIT_TAG_GLOB="$OPTARG"
+			;;
+	esac
+done
+shift $((OPTIND - 1))
 cd "${1:-.}" || usage
 
 # Check for git and a git repo.
 if head=`git rev-parse --verify HEAD 2>/dev/null`; then
 	# Do we have an untagged version?
 	if git name-rev --tags HEAD | grep -E '^HEAD[[:space:]]+(.*~[0-9]*|undefined)$' > /dev/null; then
-		if tag=`git describe 2>/dev/null`; then
+		set --
+		if [ -n "$LOCALVERSION_AUTO_GIT_TAG_GLOB" ]; then
+			set -- --match "$LOCALVERSION_AUTO_GIT_TAG_GLOB"
+		fi
+		if tag=`git describe "$@" 2>/dev/null`; then
 			echo -n "-${tag}"
 		fi
 	fi
